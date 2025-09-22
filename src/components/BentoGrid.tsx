@@ -38,7 +38,7 @@ export function BentoGrid() {
         area="md:[grid-area:3/1/4/13] xl:[grid-area:2/8/3/13]"
         icon={<Search className="h-4 w-4 text-black dark:text-neutral-400" />}
         title="Instant Search"
-        description="Ask anything and WatchWing AI will instantly find the answer for you."
+        description="WatchWing AI will always be on your screen, ready to help you find solutions."
       />
     </ul>
   );
@@ -64,7 +64,7 @@ const GridItem = ({ area, icon, title, description }: GridItemProps) => {
           proximity={64}
           inactiveZone={0.01}
         />
-        <div className="border-0.75 relative flex h-full flex-col justify-between gap-6 overflow-hidden rounded-xl p-6 md:p-6 dark:shadow-[0px_0px_17px_0px_#2D2D2D]">
+        <div className="relative flex h-full flex-col justify-between gap-6 overflow-hidden rounded-xl p-6 md:p-6 shadow-[0px_0px_17px_0px_#2D2D2D]">
           <div className="relative flex flex-1 flex-col justify-between gap-3">
             <div className="w-fit rounded-lg border border-gray-600 p-2">
               {icon}

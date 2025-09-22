@@ -73,7 +73,13 @@ const NavBar = () => {
     >
       <CardNav
         logo={
-          <span style={{ fontSize: "1.2rem", color: "#fff" }}>
+          <span
+            style={{
+              fontSize: "1.2rem",
+              color: "#fff",
+              fontWeight: "semibold",
+            }}
+          >
             WatchWing AI
           </span>
         }

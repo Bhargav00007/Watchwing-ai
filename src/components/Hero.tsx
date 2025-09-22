@@ -28,7 +28,7 @@ const Hero = () => {
 
         {/* Tagline */}
         <h1 className="text-white  text-4xl md:text-6xl font-bold max-w-3xl leading-snug mb-6 pointer-events-auto">
-          Real time AI answers, right on your screen!
+          Real time AI Solutions, right on your screen!
         </h1>
 
         {/* Buttons */}

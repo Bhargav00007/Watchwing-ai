@@ -83,10 +83,19 @@ export async function POST(req: NextRequest) {
         },
       }
     );
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error("Gemini error:", err);
+
+    // Narrow error to get a message
+    const message =
+      err instanceof Error
+        ? err.message
+        : typeof err === "string"
+        ? err
+        : "Internal error";
+
     return NextResponse.json(
-      { error: err.message || "Internal error" },
+      { error: message },
       {
         status: 500,
         headers: { "Access-Control-Allow-Origin": "*" },

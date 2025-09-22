@@ -85,7 +85,7 @@ const NavBar = () => {
         }
         logoAlt="WatchWing AI"
         items={items}
-        baseColor="#0e0e0eff"
+        baseColor="#292323ff"
         menuColor="#fff"
         buttonBgColor="#1a013aff"
         buttonTextColor="#fff"

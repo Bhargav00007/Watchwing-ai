@@ -35,7 +35,7 @@ const CpuArchitecture = ({
       <g
         stroke="currentColor"
         fill="none"
-        strokeWidth="0.3"
+        strokeWidth="0.04"
         strokeDasharray="100 100"
         pathLength="100"
         markerStart="url(#cpu-circle-marker)"
@@ -74,7 +74,7 @@ const CpuArchitecture = ({
             attributeName="stroke-dashoffset"
             from="100"
             to="0"
-            dur="1s"
+            dur="2s"
             fill="freeze"
             calcMode="spline"
             keySplines="0.25,0.1,0.5,1"

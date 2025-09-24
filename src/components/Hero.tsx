@@ -27,7 +27,7 @@ const Hero = () => {
         </div>
 
         {/* Tagline */}
-        <h1 className="text-white text-4xl md:text-6xl font-semibold max-w-3xl leading-snug mb-6 pointer-events-auto">
+        <h1 className="text-gray-200 text-4xl md:text-6xl font-semibold max-w-3xl leading-snug mb-6 pointer-events-auto">
           Smarter Browsing with AI, Right on Your Screen.
         </h1>
 
@@ -44,7 +44,7 @@ const Hero = () => {
               Download
             </button>
           </Link>
-          <Link href="/learn-more">
+          <Link href="/about">
             <button className="px-12 py-3 rounded-full cursor-pointer bg-white/5 backdrop-blur-md text-white font-semibold hover:bg-white/10border border-gray-500 transition">
               {" "}
               Learn More{" "}

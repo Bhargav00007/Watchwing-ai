@@ -9,14 +9,14 @@ const NavBar = () => {
       textColor: "#fff",
       links: [
         {
-          label: "Company",
-          href: "/about/company",
-          ariaLabel: "About Company",
+          label: "About Us",
+          href: "/about",
+          ariaLabel: "About Us",
         },
         {
-          label: "Careers",
-          href: "/about/careers",
-          ariaLabel: "About Careers",
+          label: "Release Notes",
+          href: "/about/releasenotes",
+          ariaLabel: "Release Notes",
         },
       ],
     },

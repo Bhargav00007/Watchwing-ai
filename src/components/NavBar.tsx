@@ -1,6 +1,6 @@
 import React from "react";
 import CardNav from "./CardNav";
-
+import Link from "next/link";
 const NavBar = () => {
   const items = [
     {
@@ -80,7 +80,9 @@ const NavBar = () => {
               fontWeight: "semibold",
             }}
           >
-            WatchWing AI
+            <Link href="/" aria-label="WatchWing AI">
+              WatchWing AI
+            </Link>
           </span>
         }
         logoAlt="WatchWing AI"

@@ -26,14 +26,14 @@ const NavBar = () => {
       textColor: "#fff",
       links: [
         {
-          label: "Featured",
-          href: "/projects/featured",
-          ariaLabel: "Featured Projects",
+          label: "Download",
+          href: "/download",
+          ariaLabel: "Download",
         },
         {
-          label: "Case Studies",
-          href: "/projects/case-studies",
-          ariaLabel: "Project Case Studies",
+          label: "How to setup",
+          href: "/downlaod/setup",
+          ariaLabel: "How to setup",
         },
       ],
     },

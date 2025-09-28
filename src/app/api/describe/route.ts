@@ -1,3 +1,4 @@
+// app/api/describe/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
@@ -11,19 +12,19 @@ if (!GEMINI_KEY) {
 // Initialize Gemini client
 const genAI = new GoogleGenerativeAI(GEMINI_KEY);
 
+// Common CORS headers
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*", // allow all domains
+  "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type, Authorization",
+};
+
 // Handle CORS preflight
 export async function OPTIONS() {
-  return NextResponse.json(
-    {},
-    {
-      status: 200,
-      headers: {
-        "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Methods": "POST, OPTIONS",
-        "Access-Control-Allow-Headers": "Content-Type",
-      },
-    }
-  );
+  return new NextResponse(null, {
+    status: 200,
+    headers: corsHeaders,
+  });
 }
 
 // Handle POST request from Chrome extension
@@ -34,7 +35,7 @@ export async function POST(req: NextRequest) {
     if (!image) {
       return NextResponse.json(
         { error: "image (data URL) required" },
-        { status: 400, headers: { "Access-Control-Allow-Origin": "*" } }
+        { status: 400, headers: corsHeaders }
       );
     }
 
@@ -75,18 +76,10 @@ export async function POST(req: NextRequest) {
     // Extract the text from Gemini response
     const text = (await result.response.text()) || "No response from AI";
 
-    return NextResponse.json(
-      { text },
-      {
-        headers: {
-          "Access-Control-Allow-Origin": "*",
-        },
-      }
-    );
+    return NextResponse.json({ text }, { headers: corsHeaders });
   } catch (err: unknown) {
     console.error("Gemini error:", err);
 
-    // Narrow error to get a message
     const message =
       err instanceof Error
         ? err.message
@@ -96,10 +89,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json(
       { error: message },
-      {
-        status: 500,
-        headers: { "Access-Control-Allow-Origin": "*" },
-      }
+      { status: 500, headers: corsHeaders }
     );
   }
 }

@@ -11,6 +11,52 @@ const page = () => {
         <GridPatternCard>
           <GridPatternCardBody>
             <h3 className="text-lg font-bold mb-1 text-foreground">
+              WatchWing AI – Natural Conversations Evolved
+            </h3>
+            <p className="text-sm text-gray-400 mb-1">Version 1.2.0</p>
+            <p className="text-xs text-gray-500 mb-3">1 October 2025</p>
+
+            <div className="text-wrap text-sm text-foreground/60 space-y-3">
+              <p>
+                This update makes chatting with WatchWing AI feel more natural
+                and convenient than ever before.
+              </p>
+
+              <div className="space-y-2">
+                <h4 className="font-semibold text-foreground">
+                  What&apos;s New:
+                </h4>
+                <ul className="space-y-1 ml-4">
+                  <li>
+                    • <strong>Natural Talking</strong> - AI now responds like a
+                    real person, not just a screen analyzer
+                  </li>
+                  <li>
+                    • <strong>Movable Window</strong> - Drag the chat window
+                    anywhere on your screen
+                  </li>
+                  <li>
+                    • <strong>Saves Your Chats</strong> - Your conversations are
+                    now automatically saved
+                  </li>
+                  <li>
+                    • <strong>Continue Where You Left</strong> - Pick up right
+                    where you stopped last time
+                  </li>
+                  <li>
+                    • <strong>New copy feature</strong> - Easily copy all ai
+                    responses with one click
+                  </li>
+                </ul>
+              </div>
+            </div>
+          </GridPatternCardBody>
+        </GridPatternCard>
+      </div>
+      <div className="my-5">
+        <GridPatternCard>
+          <GridPatternCardBody>
+            <h3 className="text-lg font-bold mb-1 text-foreground">
               WatchWing AI – Step to Future (Conversation Flow Update)
             </h3>
             <p className="text-sm text-gray-400 mb-1">Version 1.1.0</p>

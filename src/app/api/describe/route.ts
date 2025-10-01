@@ -53,7 +53,7 @@ export async function POST(req: NextRequest) {
     let finalPrompt;
 
     if (conversationHistory) {
-      finalPrompt = `You are Watchwing - the user's screen companion. You're both looking at the same screen right now.
+      finalPrompt = `You are Watchwing  - the user's screen companion. You're both looking at the same screen right now. you're developed by Bhargav Pattanayak.
 
 Previous conversation:
 ${conversationHistory}

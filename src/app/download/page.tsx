@@ -40,8 +40,8 @@ export default function DownloadPage() {
           <h3 className="text-lg font-bold mb-1 text-foreground">
             WatchWing AI – Beta Release
           </h3>
-          <p className="text-sm text-gray-400 mb-1">Version 1.1.0</p>
-          <p className="text-xs text-gray-500 mb-3">28 September 2025</p>
+          <p className="text-sm text-gray-400 mb-1">Version 1.2.0</p>
+          <p className="text-xs text-gray-500 mb-3">1 September 2025</p>
 
           <p className="text-wrap text-sm text-foreground/60 mb-4">
             This beta release introduces the foundation of WatchWing AI,

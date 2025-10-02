@@ -24,7 +24,7 @@ const corsHeaders = {
 
 // Track current active key index
 let currentKeyIndex = 0;
-let keyErrors = new Map<string, number>(); // Track errors per key
+const keyErrors = new Map<string, number>(); // Track errors per key
 
 // Handle CORS preflight
 export async function OPTIONS() {
@@ -88,6 +88,7 @@ function createGeminiClient(apiKey: string) {
 }
 
 // Function to attempt request with retry and key rotation
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function attemptGeminiRequest(contents: any, maxRetries = 3) {
   let lastError: Error | null = null;
 

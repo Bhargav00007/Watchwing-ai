@@ -2,15 +2,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
-const GEMINI_KEY = process.env.GEMINI_API_KEY;
-const MODEL = process.env.GEMINI_MODEL || "gemini-2.0-flash"; // Changed to 2.0 for stability
+// Multiple API keys for fallback
+const GEMINI_KEYS = [
+  process.env.GEMINI_API_KEY,
+  process.env.GEMINI_API_KEY_2,
+].filter(Boolean); // Remove any undefined keys
 
-if (!GEMINI_KEY) {
-  throw new Error("Please set GEMINI_API_KEY in .env.local");
+const MODEL = process.env.GEMINI_MODEL || "gemini-2.5-flash"; // Updated to 2.5-flash
+
+if (GEMINI_KEYS.length === 0) {
+  throw new Error("Please set at least GEMINI_API_KEY in .env.local");
 }
-
-// Initialize Gemini client
-const genAI = new GoogleGenerativeAI(GEMINI_KEY);
 
 // Common CORS headers
 const corsHeaders = {
@@ -20,12 +22,135 @@ const corsHeaders = {
   "Content-Type": "application/json",
 };
 
+// Track current active key index
+let currentKeyIndex = 0;
+let keyErrors = new Map<string, number>(); // Track errors per key
+
 // Handle CORS preflight
 export async function OPTIONS() {
   return new NextResponse(null, {
     status: 200,
     headers: corsHeaders,
   });
+}
+
+// Function to get current active key
+function getCurrentKey() {
+  return GEMINI_KEYS[currentKeyIndex];
+}
+
+// Function to rotate to next available key
+function rotateToNextKey() {
+  const originalIndex = currentKeyIndex;
+
+  do {
+    currentKeyIndex = (currentKeyIndex + 1) % GEMINI_KEYS.length;
+
+    // If we've tried all keys, reset error counts and try original
+    if (currentKeyIndex === originalIndex) {
+      resetErrorCounts();
+      break;
+    }
+
+    const currentKey = GEMINI_KEYS[currentKeyIndex];
+    const errorCount = keyErrors.get(currentKey!) || 0;
+
+    // Only use keys with less than 3 recent errors
+    if (errorCount < 3) {
+      console.log(`Switched to API key index: ${currentKeyIndex}`);
+      break;
+    }
+  } while (currentKeyIndex !== originalIndex);
+
+  return getCurrentKey();
+}
+
+// Function to increment error count for a key
+function incrementErrorCount(key: string) {
+  const count = keyErrors.get(key) || 0;
+  keyErrors.set(key, count + 1);
+
+  // Reset error counts after 5 minutes
+  setTimeout(() => {
+    keyErrors.delete(key);
+  }, 5 * 60 * 1000);
+}
+
+// Function to reset all error counts
+function resetErrorCounts() {
+  keyErrors.clear();
+  console.log("Reset all API key error counts");
+}
+
+// Function to create Gemini client with a specific key
+function createGeminiClient(apiKey: string) {
+  return new GoogleGenerativeAI(apiKey);
+}
+
+// Function to attempt request with retry and key rotation
+async function attemptGeminiRequest(contents: any, maxRetries = 3) {
+  let lastError: Error | null = null;
+
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    const currentKey = getCurrentKey();
+    const genAI = createGeminiClient(currentKey!);
+
+    try {
+      const model = genAI.getGenerativeModel({
+        model: MODEL,
+        generationConfig: {
+          temperature: 0.7,
+          topK: 40,
+          topP: 0.95,
+          maxOutputTokens: 1024,
+        },
+      });
+
+      const result = await model.generateContent({ contents });
+      const text = (await result.response.text()) || "No response from AI";
+
+      return { success: true, text };
+    } catch (err: unknown) {
+      lastError = err instanceof Error ? err : new Error(String(err));
+
+      console.error(
+        `Attempt ${attempt + 1} failed with key ${currentKeyIndex}:`,
+        lastError.message
+      );
+
+      // Increment error count for this key
+      incrementErrorCount(currentKey!);
+
+      // Check if this is a retryable error (rate limit, overload, etc.)
+      const errorMessage = lastError.message.toLowerCase();
+      const isRetryableError =
+        errorMessage.includes("overload") ||
+        errorMessage.includes("503") ||
+        errorMessage.includes("429") ||
+        errorMessage.includes("quota") ||
+        errorMessage.includes("rate limit") ||
+        errorMessage.includes("service unavailable");
+
+      if (isRetryableError && attempt < maxRetries - 1) {
+        console.log(`Retryable error detected, rotating API key...`);
+        rotateToNextKey();
+
+        // Wait before retry (exponential backoff)
+        await new Promise((resolve) =>
+          setTimeout(resolve, Math.pow(2, attempt) * 1000)
+        );
+        continue;
+      }
+
+      // If not retryable or out of retries, break
+      break;
+    }
+  }
+
+  return {
+    success: false,
+    error: lastError?.message || "All retry attempts failed",
+  };
 }
 
 // Handle POST request from Chrome extension
@@ -87,32 +212,30 @@ Respond as Watchwing looking at their screen. Use "I can see" and speak naturall
       },
     ];
 
-    // Get model instance with better configuration
-    const model = genAI.getGenerativeModel({
-      model: MODEL,
-      generationConfig: {
-        temperature: 0.7,
-        topK: 40,
-        topP: 0.95,
-        maxOutputTokens: 1024,
-      },
-    });
+    // Attempt the request with retry logic and key rotation
+    const result = await attemptGeminiRequest(contents);
 
-    // Generate content
-    const result = await model.generateContent({ contents });
-
-    // Extract the text from Gemini response
-    const text = (await result.response.text()) || "No response from AI";
-
-    return NextResponse.json(
-      {
-        text,
-        success: true,
-      },
-      { headers: corsHeaders }
-    );
+    if (result.success) {
+      return NextResponse.json(
+        {
+          text: result.text,
+          success: true,
+          keyIndex: currentKeyIndex, // For debugging
+        },
+        { headers: corsHeaders }
+      );
+    } else {
+      return NextResponse.json(
+        {
+          error: result.error,
+          success: false,
+          keyIndex: currentKeyIndex, // For debugging
+        },
+        { status: 500, headers: corsHeaders }
+      );
+    }
   } catch (err: unknown) {
-    console.error("Gemini error:", err);
+    console.error("Unexpected error:", err);
 
     const message =
       err instanceof Error

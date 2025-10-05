@@ -6,6 +6,7 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 const GEMINI_KEYS = [
   process.env.GEMINI_API_KEY,
   process.env.GEMINI_API_KEY_2,
+  process.env.GEMINI_API_KEY_3,
 ].filter(Boolean); // Remove any undefined keys
 
 const MODEL = process.env.GEMINI_MODEL || "gemini-2.5-flash"; // Updated to 2.5-flash

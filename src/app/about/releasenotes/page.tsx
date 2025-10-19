@@ -11,6 +11,72 @@ const page = () => {
         <GridPatternCard>
           <GridPatternCardBody>
             <h3 className="text-lg font-bold mb-1 text-foreground">
+              WatchWing AI – Voice & Customization Update
+            </h3>
+            <p className="text-sm text-gray-400 mb-1">Version 1.3.0</p>
+            <p className="text-xs text-gray-500 mb-3">18 October 2025</p>
+
+            <div className="text-wrap text-sm text-foreground/60 space-y-3">
+              <p>
+                WatchWing AI gets even smarter with voice interactions,
+                customizable interface, and enhanced conversation features.
+              </p>
+
+              <div className="space-y-2">
+                <h4 className="font-semibold text-foreground">
+                  What&apos;s New:
+                </h4>
+                <ul className="space-y-1 ml-4">
+                  <li>
+                    • <strong>Voice Conversations</strong> - Speak your
+                    questions and hear AI responses with natural voice
+                  </li>
+                  <li>
+                    • <strong>Smart Microphone</strong> - Click the mic button
+                    to convert speech to text instantly
+                  </li>
+                  <li>
+                    • <strong>Auto Voice Response</strong> - When using voice
+                    input, WatchWing automatically speaks back
+                  </li>
+                  <li>
+                    • <strong>Resizable Window</strong> - Customize the chat
+                    size to your preference
+                  </li>
+                </ul>
+              </div>
+
+              <div className="space-y-2">
+                <h4 className="font-semibold text-foreground">
+                  Enhanced Features:
+                </h4>
+                <ul className="space-y-1 ml-4">
+                  <li>
+                    • <strong>Natural Voice Selection</strong> - Automatically
+                    selects the best available voice
+                  </li>
+                  <li>
+                    • <strong>Real-time Speech Recognition</strong> - See your
+                    words appear as you speak
+                  </li>
+                  <li>
+                    • <strong>Visual Recording Feedback</strong> - Blue glow
+                    animation when recording
+                  </li>
+                  <li>
+                    • <strong>Session Memory</strong> - Remembers window
+                    position, size, and chat history
+                  </li>
+                </ul>
+              </div>
+            </div>
+          </GridPatternCardBody>
+        </GridPatternCard>
+      </div>
+      <div className="my-5">
+        <GridPatternCard>
+          <GridPatternCardBody>
+            <h3 className="text-lg font-bold mb-1 text-foreground">
               WatchWing AI – Natural Conversations Evolved
             </h3>
             <p className="text-sm text-gray-400 mb-1">Version 1.2.0</p>

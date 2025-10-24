@@ -7,7 +7,7 @@ export default function AboutPage() {
   return (
     <main className="min-h-screen  text-gray-300 p-8 my-30 mx-auto">
       {/* Page Container */}
-      <div className="max-w-4xl mx-auto space-y-12">
+      <div className="max-w-3xl mx-auto space-y-12">
         {/* Introduction */}
         <section>
           <h1 className="lg:text-5xl text-4xl font-bold text-start mb-6">

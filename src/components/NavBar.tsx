@@ -14,6 +14,11 @@ const NavBar = () => {
           ariaLabel: "About Us",
         },
         {
+          label: "Documentation",
+          href: "/about/documentation",
+          ariaLabel: "Documentation",
+        },
+        {
           label: "Release Notes",
           href: "/about/releasenotes",
           ariaLabel: "Release Notes",

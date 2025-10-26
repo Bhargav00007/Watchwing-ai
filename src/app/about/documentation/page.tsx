@@ -172,6 +172,66 @@ export default function AboutPage() {
           </div>
         </section>
 
+        <section>
+          <h2 className="text-3xl font-bold text-start mb-6 text-red-400">
+            Error Handling System
+          </h2>
+          <div className="bg-gray-800/50 p-6 rounded-lg border border-gray-700 space-y-6">
+            {/* Replaced Graph with Image */}
+            <div className="flex justify-center">
+              <Image
+                src="/assets/errorhandling.png"
+                alt="Error Handling System Flow"
+                width={900}
+                height={500}
+                className="rounded-lg border border-gray-700"
+              />
+            </div>
+
+            <div className="grid md:grid-cols-2 gap-6 text-gray-300">
+              <div>
+                <h4 className="text-xl font-semibold mb-3">
+                  Multi-Key Fallback System
+                </h4>
+                <ul className="list-disc list-inside space-y-2">
+                  <li>
+                    <strong>Sequential Key Rotation</strong> - Automatically
+                    switches between Gemini API keys
+                  </li>
+                  <li>
+                    <strong>Error Detection</strong> - Identifies
+                    &quot;Bug&quot; errors and quota issues
+                  </li>
+                  <li>
+                    <strong>Smart Retry Logic</strong> - Marks faulty keys and
+                    moves to next available key
+                  </li>
+                  <li>
+                    <strong>Cascade Failure Prevention</strong> - Multiple
+                    backup keys ensure service continuity
+                  </li>
+                  <li>
+                    <strong>Real-time Monitoring</strong> - Continuous health
+                    checking of all API endpoints
+                  </li>
+                </ul>
+              </div>
+              <div>
+                <h4 className="text-xl font-semibold mb-3">
+                  Recovery Workflow
+                </h4>
+                <ul className="list-disc list-inside space-y-2">
+                  <li>Automatic key switching on error detection</li>
+                  <li>Error marking on faulty keys for temporary exclusion</li>
+                  <li>Fallback to secondary and tertiary API keys</li>
+                  <li>Continuous retry until successful response</li>
+                  <li>Comprehensive error tracking and logging</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </section>
+
         {/* Technical Specifications */}
         <section>
           <h2 className="text-3xl font-bold text-start mb-6 text-gray-400">

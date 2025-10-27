@@ -9,7 +9,7 @@ const GEMINI_KEYS = [
   process.env.GEMINI_API_KEY_3,
 ].filter(Boolean); // Remove any undefined keys
 
-const MODEL = process.env.GEMINI_MODEL || "gemini-2.5-flash"; // Updated to 2.5-flash
+const MODEL = process.env.GEMINI_MODEL || "gemini-2.5-flash";
 
 if (GEMINI_KEYS.length === 0) {
   throw new Error("Please set at least GEMINI_API_KEY in .env.local");
@@ -25,7 +25,7 @@ const corsHeaders = {
 
 // Track current active key index
 let currentKeyIndex = 0;
-const keyErrors = new Map<string, number>(); // Track errors per key
+const keyErrors = new Map<string, number>();
 
 // Handle CORS preflight
 export async function OPTIONS() {
@@ -47,7 +47,6 @@ function rotateToNextKey() {
   do {
     currentKeyIndex = (currentKeyIndex + 1) % GEMINI_KEYS.length;
 
-    // If we've tried all keys, reset error counts and try original
     if (currentKeyIndex === originalIndex) {
       resetErrorCounts();
       break;
@@ -56,7 +55,6 @@ function rotateToNextKey() {
     const currentKey = GEMINI_KEYS[currentKeyIndex];
     const errorCount = keyErrors.get(currentKey!) || 0;
 
-    // Only use keys with less than 3 recent errors
     if (errorCount < 3) {
       console.log(`Switched to API key index: ${currentKeyIndex}`);
       break;
@@ -71,7 +69,6 @@ function incrementErrorCount(key: string) {
   const count = keyErrors.get(key) || 0;
   keyErrors.set(key, count + 1);
 
-  // Reset error counts after 5 minutes
   setTimeout(() => {
     keyErrors.delete(key);
   }, 5 * 60 * 1000);
@@ -88,7 +85,70 @@ function createGeminiClient(apiKey: string) {
   return new GoogleGenerativeAI(apiKey);
 }
 
-// Function to attempt request with retry and key rotation
+// Enhanced prompt engineering for better responses
+function buildIntelligentPrompt(
+  prompt: string = "",
+  conversationHistory?: string
+) {
+  const basePersonality = `You are Watchwing - the user's screen companion developed by Bhargav Pattanayak. You're both looking at the same screen.
+
+CRITICAL GUIDELINES:
+1. Be CONCISE but helpful - default to shorter responses (2-4 sentences)
+2. Only provide longer explanations when specifically asked for details
+3. For code: ALWAYS format code blocks properly with language specification
+4. NEVER respond with "No response from AI" - if you can't understand something, say so clearly
+5. Use "I can see" naturally when describing the screen
+6. For complex code questions, break down your analysis but stay focused
+
+CODE FORMATTING RULES:
+- Wrap ALL code in triple backticks with language specification
+- Example: \`\`\`javascript [code here] \`\`\`
+- No additional text inside code blocks - just pure code
+- Include relevant code only`;
+
+  if (conversationHistory) {
+    return `${basePersonality}
+
+Previous conversation:
+${conversationHistory}
+
+Current question: ${prompt || "What's on my screen right now?"}
+
+Respond naturally as Watchwing while actively viewing their screen.`;
+  }
+
+  return `${basePersonality}
+
+User: ${prompt || "What's on my screen right now?"}
+
+Respond as Watchwing looking at their screen. Keep it natural and conversational.`;
+}
+
+// Enhanced response processing
+function processAIResponse(rawText: string): string {
+  if (!rawText || rawText.trim() === "No response from AI") {
+    return "I'm having trouble processing this specific screen content right now. Could you try asking in a different way or provide more context about what you'd like me to focus on?";
+  }
+
+  // Clean up common Gemini response artifacts
+  let processedText = rawText
+    .replace(/^```\w*\n?/g, "") // Remove leading code block markers
+    .replace(/\n?```$/g, "") // Remove trailing code block markers
+    .trim();
+
+  // Ensure code blocks are properly formatted for frontend display
+  processedText = processedText.replace(
+    /```(\w+)?\s*([\s\S]*?)```/g,
+    (match, lang, code) => {
+      const language = lang || "text";
+      return `\`\`\`${language}\n${code.trim()}\n\`\`\``;
+    }
+  );
+
+  return processedText;
+}
+
+// Enhanced request function with better error handling
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function attemptGeminiRequest(contents: any, maxRetries = 3) {
   let lastError: Error | null = null;
@@ -101,17 +161,28 @@ async function attemptGeminiRequest(contents: any, maxRetries = 3) {
       const model = genAI.getGenerativeModel({
         model: MODEL,
         generationConfig: {
-          temperature: 0.7,
+          temperature: 0.4, // Lower temperature for more consistent responses
           topK: 40,
-          topP: 0.95,
-          maxOutputTokens: 1024,
+          topP: 0.9,
+          maxOutputTokens: 800, // Reduced for more concise responses
         },
       });
 
       const result = await model.generateContent({ contents });
-      const text = (await result.response.text()) || "No response from AI";
 
-      return { success: true, text };
+      if (!result || !result.response) {
+        throw new Error("Empty response from Gemini API");
+      }
+
+      const text = await result.response.text();
+
+      if (!text || text.trim().length === 0) {
+        throw new Error("Empty text response from AI");
+      }
+
+      const processedText = processAIResponse(text);
+
+      return { success: true, text: processedText };
     } catch (err: unknown) {
       lastError = err instanceof Error ? err : new Error(String(err));
 
@@ -120,10 +191,8 @@ async function attemptGeminiRequest(contents: any, maxRetries = 3) {
         lastError.message
       );
 
-      // Increment error count for this key
       incrementErrorCount(currentKey!);
 
-      // Check if this is a retryable error (rate limit, overload, etc.)
       const errorMessage = lastError.message.toLowerCase();
       const isRetryableError =
         errorMessage.includes("overload") ||
@@ -131,20 +200,20 @@ async function attemptGeminiRequest(contents: any, maxRetries = 3) {
         errorMessage.includes("429") ||
         errorMessage.includes("quota") ||
         errorMessage.includes("rate limit") ||
-        errorMessage.includes("service unavailable");
+        errorMessage.includes("service unavailable") ||
+        errorMessage.includes("empty response") ||
+        errorMessage.includes("empty text");
 
       if (isRetryableError && attempt < maxRetries - 1) {
         console.log(`Retryable error detected, rotating API key...`);
         rotateToNextKey();
 
-        // Wait before retry (exponential backoff)
         await new Promise((resolve) =>
           setTimeout(resolve, Math.pow(2, attempt) * 1000)
         );
         continue;
       }
 
-      // If not retryable or out of retries, break
       break;
     }
   }
@@ -176,25 +245,8 @@ export async function POST(req: NextRequest) {
       base64 = match[2];
     }
 
-    // Build immersive prompt with Watchwing personality
-    let finalPrompt;
-
-    if (conversationHistory) {
-      finalPrompt = `You are Watchwing  - the user's screen companion. You're both looking at the same screen right now. you're developed by Bhargav Pattanayak.
-
-Previous conversation:
-${conversationHistory}
-
-Current question: ${prompt || "What's on my screen right now?"}
-
-Respond naturally as Watchwing while looking at their screen. Use "I can see" and speak like you're actively viewing their display together.`;
-    } else {
-      finalPrompt = `You are Watchwing, a helpful AI companion that can see the user's screen. They're sharing their display with you live. Please help them with what you see.
-
-User: ${prompt || "What's on my screen right now?"}
-
-Respond as Watchwing looking at their screen. Use "I can see" and speak naturally like you're both viewing the same display.`;
-    }
+    // Build intelligent prompt
+    const finalPrompt = buildIntelligentPrompt(prompt, conversationHistory);
 
     // Create the prompt structure for Gemini
     const contents = [
@@ -214,7 +266,7 @@ Respond as Watchwing looking at their screen. Use "I can see" and speak naturall
       },
     ];
 
-    // Attempt the request with retry logic and key rotation
+    // Attempt the request with retry logic
     const result = await attemptGeminiRequest(contents);
 
     if (result.success) {
@@ -222,16 +274,24 @@ Respond as Watchwing looking at their screen. Use "I can see" and speak naturall
         {
           text: result.text,
           success: true,
-          keyIndex: currentKeyIndex, // For debugging
+          keyIndex: currentKeyIndex,
         },
         { headers: corsHeaders }
       );
     } else {
+      // Provide more user-friendly error messages
+      const errorMessageText = result.error ?? "";
+      const userFriendlyError = errorMessageText.includes("quota")
+        ? "API quota exceeded. Please try again later or contact support."
+        : errorMessageText.includes("rate limit")
+        ? "Rate limit reached. Please wait a moment and try again."
+        : "I'm having trouble processing your request right now. Please try again.";
+
       return NextResponse.json(
         {
-          error: result.error,
+          error: userFriendlyError,
           success: false,
-          keyIndex: currentKeyIndex, // For debugging
+          keyIndex: currentKeyIndex,
         },
         { status: 500, headers: corsHeaders }
       );
@@ -240,16 +300,13 @@ Respond as Watchwing looking at their screen. Use "I can see" and speak naturall
     console.error("Unexpected error:", err);
 
     const message =
-      err instanceof Error
-        ? err.message
-        : typeof err === "string"
-        ? err
-        : "Internal error";
+      err instanceof Error ? err.message : "Internal server error";
 
     return NextResponse.json(
       {
-        error: message,
+        error: "An unexpected error occurred. Please try again.",
         success: false,
+        debug: process.env.NODE_ENV === "development" ? message : undefined,
       },
       { status: 500, headers: corsHeaders }
     );

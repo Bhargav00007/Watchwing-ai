@@ -1,4 +1,3 @@
-// app/api/describe/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
@@ -85,49 +84,153 @@ function createGeminiClient(apiKey: string) {
   return new GoogleGenerativeAI(apiKey);
 }
 
-// Enhanced prompt engineering for better responses
+// Enhanced prompt engineering for intelligent responses
 function buildIntelligentPrompt(
   prompt: string = "",
-  conversationHistory?: string
+  conversationHistory?: string,
+  currentUrl?: string,
+  hasImage: boolean = true
 ) {
-  const basePersonality = `You are Watchwing - the user's screen companion developed by Bhargav Pattanayak. You're both looking at the same screen.
+  const basePersonality = `You are Watchwing - an intelligent AI assistant developed by Bhargav Pattanayak. You have two modes of operation:
+
+1. SCREEN ANALYSIS MODE: When you receive a screenshot, you can analyze and describe what's visible on the user's screen
+2. GENERAL ASSISTANT MODE: When no screenshot is provided or the question is general, you function as a helpful AI assistant
 
 CRITICAL GUIDELINES:
-1. Be CONCISE but helpful - default to shorter responses (2-4 sentences)
-2. Only provide longer explanations when specifically asked for details
-3. For code: ALWAYS format code blocks properly with language specification
-4. NEVER respond with "No response from AI" - if you can't understand something, say so clearly
-5. Use "I can see" naturally when describing the screen
-6. For complex code questions, break down your analysis but stay focused
+1. Be helpful and informative in all contexts
+2. For screenshot questions: Focus on what's visible and provide detailed analysis
+3. For general questions: Provide comprehensive, knowledgeable answers
+4. For YouTube/video URLs: Use your knowledge to summarize content even without screenshots
+5. Always be honest about your capabilities and knowledge
+6. Use natural, conversational language
 
-CODE FORMATTING RULES:
-- Wrap ALL code in triple backticks with language specification
-- Example: \`\`\`javascript [code here] \`\`\`
-- No additional text inside code blocks - just pure code
-- Include relevant code only`;
+SPECIAL CAPABILITIES:
 
-  if (conversationHistory) {
-    return `${basePersonality}
+VIDEO SUMMARIZATION (YouTube URLs):
+- When you detect a YouTube URL or when asked about video content, ALWAYS provide timestamps
+- Use this EXACT format for video summaries:
+  
+  "Here is a summary of the video '[Video Title]' from the channel [Channel Name].
 
-Previous conversation:
-${conversationHistory}
+  The video [brief overview of main topic and purpose] [00:01].
 
-Current question: ${prompt || "What's on my screen right now?"}
+  Here's a detailed breakdown with timestamps:
 
-Respond naturally as Watchwing while actively viewing their screen.`;
+  • [Key point 1] - [00:30]
+  • [Key point 2] - [01:15] 
+  • [Key point 3] - [02:45]
+  • [Key point 4] - [04:20]
+  • [Key point 5] - [06:10]
+
+  [Additional section if needed]:
+  - [Detail with timestamp] - [07:30]
+  - [Detail with timestamp] - [08:45]
+
+  Conclusion: [Final summary and takeaways] - [10:00]"
+
+- ALWAYS include at least 5-7 timestamps in your video summaries
+- Use realistic timestamps that make sense for the video content
+- Include timestamps for introduction, key points, and conclusion
+- For longer videos, provide more timestamps to cover the content adequately
+
+GENERAL KNOWLEDGE:
+- Answer questions about any topic: science, history, technology, etc.
+- Help with coding, writing, analysis, and creative tasks
+- Provide explanations and detailed information
+- Offer multiple perspectives when appropriate
+
+SCREEN ANALYSIS:
+- Describe visible content, text, images, and layouts
+- Analyze code, documents, websites, and applications
+- Provide insights based on what's shown on screen
+- Help with troubleshooting and understanding visual content`;
+
+  let contextPrompt = basePersonality;
+
+  // Add URL context if available
+  if (currentUrl) {
+    contextPrompt += `\n\nCURRENT URL CONTEXT: The user is currently on ${currentUrl}.`;
+
+    // Special handling for YouTube and video platforms
+    if (currentUrl.includes("youtube.com") || currentUrl.includes("youtu.be")) {
+      contextPrompt += `\n\n🎬 VIDEO CONTEXT DETECTED: This is a YouTube video. You MUST:
+      • Provide a detailed summary with timestamps
+      • Include at least 5-7 realistic timestamps
+      • Structure the response with clear sections
+      • Cover introduction, key points, and conclusion
+      • Use the exact timestamp format shown above`;
+
+      // Check if the prompt is asking for summarization
+      const summaryKeywords = [
+        "summarize",
+        "summary",
+        "what's this about",
+        "explain this video",
+        "tell me about this video",
+      ];
+      const isAskingForSummary = summaryKeywords.some((keyword) =>
+        prompt.toLowerCase().includes(keyword)
+      );
+
+      if (isAskingForSummary) {
+        contextPrompt += `\n\n📝 SUMMARY REQUEST DETECTED: The user is asking for a video summary. Provide a comprehensive breakdown with timestamps.`;
+      }
+    }
+
+    contextPrompt += `\n\nUse this URL context to enhance your responses, but remember you can also answer general questions unrelated to the current page.`;
   }
 
-  return `${basePersonality}
+  // Add image context
+  if (hasImage) {
+    contextPrompt += `\n\n📸 SCREENSHOT PROVIDED: You are viewing the user's screen. Analyze what's visible and provide relevant insights.`;
+  } else {
+    contextPrompt += `\n\n💭 NO SCREENSHOT: You are in general assistant mode. Answer the user's question based on your knowledge.`;
+  }
 
-User: ${prompt || "What's on my screen right now?"}
+  // Check if the prompt is asking for video content specifically
+  const videoKeywords = [
+    "video",
+    "youtube",
+    "summarize",
+    "summary",
+    "timestamp",
+    "minute",
+    "second",
+  ];
+  const isVideoRelated = videoKeywords.some((keyword) =>
+    prompt.toLowerCase().includes(keyword)
+  );
 
-Respond as Watchwing looking at their screen. Keep it natural and conversational.`;
+  if (
+    isVideoRelated &&
+    currentUrl &&
+    (currentUrl.includes("youtube.com") || currentUrl.includes("youtu.be"))
+  ) {
+    contextPrompt += `\n\n⏰ TIMESTAMP REQUIREMENT: User is asking about video content. You MUST include detailed timestamps in your response.`;
+  }
+
+  if (conversationHistory) {
+    return `${contextPrompt}
+
+PREVIOUS CONVERSATION:
+${conversationHistory}
+
+CURRENT QUESTION: ${prompt}
+
+Respond naturally and helpfully as Watchwing.`;
+  }
+
+  return `${contextPrompt}
+
+USER QUESTION: ${prompt || "Hello, how can you help me?"}
+
+Respond as Watchwing - ready to help with both screen analysis and general questions.`;
 }
 
 // Enhanced response processing
 function processAIResponse(rawText: string): string {
   if (!rawText || rawText.trim() === "No response from AI") {
-    return "I'm having trouble processing this specific screen content right now. Could you try asking in a different way or provide more context about what you'd like me to focus on?";
+    return "I'm having trouble processing your request right now. Could you try asking in a different way or provide more context?";
   }
 
   // Clean up common Gemini response artifacts
@@ -161,10 +264,10 @@ async function attemptGeminiRequest(contents: any, maxRetries = 3) {
       const model = genAI.getGenerativeModel({
         model: MODEL,
         generationConfig: {
-          temperature: 0.4, // Lower temperature for more consistent responses
+          temperature: 0.4,
           topK: 40,
           topP: 0.9,
-          maxOutputTokens: 800, // Reduced for more concise responses
+          maxOutputTokens: 2000, // Increased for detailed timestamped responses
         },
       });
 
@@ -227,44 +330,74 @@ async function attemptGeminiRequest(contents: any, maxRetries = 3) {
 // Handle POST request from Chrome extension
 export async function POST(req: NextRequest) {
   try {
-    const { image, prompt, conversationHistory } = await req.json();
+    const { image, prompt, conversationHistory, currentUrl } = await req.json();
 
-    if (!image) {
+    // Check if we have at least a prompt or image
+    if (!prompt && !image) {
       return NextResponse.json(
-        { error: "image (data URL) required" },
+        { error: "Either prompt or image is required" },
         { status: 400, headers: corsHeaders }
       );
     }
 
-    // Extract base64 data + mimeType
-    let base64 = image;
+    const hasImage = !!image;
+    let base64 = "";
     let mimeType = "image/png";
-    const match = image.match(/^data:(.+);base64,(.*)$/);
-    if (match) {
-      mimeType = match[1];
-      base64 = match[2];
+
+    // Process image if provided
+    if (image) {
+      const match = image.match(/^data:(.+);base64,(.*)$/);
+      if (match) {
+        mimeType = match[1];
+        base64 = match[2];
+      } else {
+        // If it's already base64 without data URL prefix
+        base64 = image;
+      }
     }
 
-    // Build intelligent prompt
-    const finalPrompt = buildIntelligentPrompt(prompt, conversationHistory);
+    // Build intelligent prompt with context awareness
+    const finalPrompt = buildIntelligentPrompt(
+      prompt,
+      conversationHistory,
+      currentUrl,
+      hasImage
+    );
 
-    // Create the prompt structure for Gemini
-    const contents = [
-      {
-        role: "user",
-        parts: [
-          {
-            inlineData: {
-              mimeType,
-              data: base64,
+    // Create the content structure based on whether we have an image
+    let contents;
+
+    if (hasImage) {
+      // With image: multimodal request
+      contents = [
+        {
+          role: "user",
+          parts: [
+            {
+              inlineData: {
+                mimeType,
+                data: base64,
+              },
             },
-          },
-          {
-            text: finalPrompt,
-          },
-        ],
-      },
-    ];
+            {
+              text: finalPrompt,
+            },
+          ],
+        },
+      ];
+    } else {
+      // Without image: text-only request
+      contents = [
+        {
+          role: "user",
+          parts: [
+            {
+              text: finalPrompt,
+            },
+          ],
+        },
+      ];
+    }
 
     // Attempt the request with retry logic
     const result = await attemptGeminiRequest(contents);
@@ -275,6 +408,7 @@ export async function POST(req: NextRequest) {
           text: result.text,
           success: true,
           keyIndex: currentKeyIndex,
+          mode: hasImage ? "screen_analysis" : "general_assistant",
         },
         { headers: corsHeaders }
       );

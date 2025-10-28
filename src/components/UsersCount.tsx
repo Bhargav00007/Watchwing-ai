@@ -31,7 +31,7 @@ const UserCount = () => {
     <section className="w-full py-12 bg-[#0a0a0a] flex justify-center items-center">
       <div className="w-full max-w-3xl flex flex-row flex-wrap justify-center items-center lg:gap-10 gap-4 px-4">
         {/* Downloads Counter */}
-        <div className="flex-1 min-w-[150px]  shadow-md shadow-[#1f1f1f] rounded-2xl p-5 sm:p-8 text-center transition-transform hover:scale-[1.02] duration-300">
+        <div className="flex-1 min-w-[150px]  shadow-md shadow-[#1f1f1f] rounded-2xl p-5 sm:p-8 text-center transition-transform ">
           <GradientText>
             <h2 className="text-3xl sm:text-4xl md:text-5xl mb-1 font-bold text-gray-300">
               <CountUp
@@ -48,7 +48,7 @@ const UserCount = () => {
         </div>
 
         {/* Users Counter */}
-        <div className="flex-1 min-w-[150px] shadow-md shadow-[#1f1f1f] rounded-2xl p-5 sm:p-8 text-center transition-transform hover:scale-[1.02] duration-300">
+        <div className="flex-1 min-w-[150px] shadow-md shadow-[#1f1f1f] rounded-2xl p-5 sm:p-8 text-center transition-transform ">
           <GradientText>
             <h2 className="text-3xl sm:text-4xl md:text-5xl mb-1 font-bold text-gray-300">
               <CountUp

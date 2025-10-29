@@ -6,7 +6,9 @@ const GEMINI_KEYS = [
   process.env.GEMINI_API_KEY,
   process.env.GEMINI_API_KEY_2,
   process.env.GEMINI_API_KEY_3,
-].filter(Boolean); // Remove any undefined keys
+  process.env.GEMINI_API_KEY_4,
+  process.env.GEMINI_API_KEY_5,
+].filter(Boolean);
 
 const MODEL = process.env.GEMINI_MODEL || "gemini-2.5-flash";
 
@@ -267,7 +269,7 @@ async function attemptGeminiRequest(contents: any, maxRetries = 3) {
           temperature: 0.4,
           topK: 40,
           topP: 0.9,
-          maxOutputTokens: 2000, // Increased for detailed timestamped responses
+          maxOutputTokens: 1200, // Increased for detailed timestamped responses
         },
       });
 

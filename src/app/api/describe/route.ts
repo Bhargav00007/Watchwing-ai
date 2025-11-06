@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextRequest, NextResponse } from "next/server";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
@@ -10,6 +11,8 @@ const GEMINI_KEYS = [
   process.env.GEMINI_API_KEY_5,
   process.env.GEMINI_API_KEY_6,
   process.env.GEMINI_API_KEY_7,
+  process.env.GEMINI_API_KEY_8,
+  process.env.GEMINI_API_KEY_9,
 ].filter(Boolean);
 
 const MODEL = process.env.GEMINI_MODEL || "gemini-2.5-flash";
@@ -88,147 +91,137 @@ function createGeminiClient(apiKey: string) {
   return new GoogleGenerativeAI(apiKey);
 }
 
-// Enhanced prompt engineering for intelligent responses
+// Determine appropriate max tokens based on prompt complexity
+function getMaxTokensForPrompt(
+  prompt: string = "",
+  hasImage: boolean = false
+): number {
+  const simpleGreetings = ["hi", "hello", "hey", "hi!", "hello!", "hey!"];
+  const shortQuestions = [
+    "how are you",
+    "what's up",
+    "how are you?",
+    "what's up?",
+  ];
+
+  const cleanPrompt = prompt.toLowerCase().trim();
+
+  // Very short responses for simple greetings
+  if (
+    simpleGreetings.includes(cleanPrompt) ||
+    shortQuestions.some((q) => cleanPrompt.includes(q))
+  ) {
+    return 150; // Very short for simple interactions
+  }
+
+  // Short responses for basic questions
+  if (cleanPrompt.length < 20 && !hasImage) {
+    return 300;
+  }
+
+  // Medium responses for normal questions without images
+  if (!hasImage && cleanPrompt.length < 100) {
+    return 600;
+  }
+
+  // Longer responses for complex questions or with images
+  if (hasImage || cleanPrompt.length >= 100) {
+    return 1000;
+  }
+
+  // Default for unknown cases
+  return 600;
+}
+
+// Enhanced prompt engineering for intelligent but concise responses
 function buildIntelligentPrompt(
   prompt: string = "",
   conversationHistory?: string,
   currentUrl?: string,
   hasImage: boolean = true
 ) {
-  const basePersonality = `You are Watchwing - an intelligent AI assistant developed by Bhargav Pattanayak. You have two modes of operation:
+  const basePersonality = `You are Watchwing - an intelligent AI assistant developed by Bhargav Pattanayak. You have two modes:
 
-1. SCREEN ANALYSIS MODE: When you receive a screenshot, you can analyze and describe what's visible on the user's screen
-2. GENERAL ASSISTANT MODE: When no screenshot is provided or the question is general, you function as a helpful AI assistant
+1. SCREEN ANALYSIS: When you receive a screen, briefly describe what's visible
+2. GENERAL ASSISTANT: When no screen, be a helpful AI assistant
 
 CRITICAL GUIDELINES:
-1. Be helpful and informative in all contexts
-2. For screenshot questions: Focus on what's visible and provide detailed analysis
-3. For general questions: Provide comprehensive, knowledgeable answers
-4. For YouTube/video URLs: Use your knowledge to summarize content even without screenshots
-5. Always be honest about your capabilities and knowledge
-6. Use natural, conversational language
+- Be helpful but CONCISE - avoid long introductions or explanations
+- For simple greetings: Respond briefly and naturally
+- For screen: Focus on key elements only
+- For general questions: Provide direct, helpful answers
+- Use natural, conversational language
+- Keep responses appropriate to question length and complexity
 
 SPECIAL CAPABILITIES:
 
 VIDEO SUMMARIZATION (YouTube URLs):
-- When you detect a YouTube URL or when asked about video content, ALWAYS provide timestamps
-- Use this EXACT format for video summaries:
+- When detecting YouTube URLs, provide brief summaries with key timestamps
+- Use simple format:
+  "Summary of '[Video Title]' from [Channel Name]:
   
-  "Here is a summary of the video '[Video Title]' from the channel [Channel Name].
-
-  The video [brief overview of main topic and purpose] [00:01].
-
-  Here's a detailed breakdown with timestamps:
-
   • [Key point 1] - [00:30]
-  • [Key point 2] - [01:15] 
+  • [Key point 2] - [01:15]
   • [Key point 3] - [02:45]
-  • [Key point 4] - [04:20]
-  • [Key point 5] - [06:10]
+  
+  Conclusion: [Brief takeaway]"
 
-  [Additional section if needed]:
-  - [Detail with timestamp] - [07:30]
-  - [Detail with timestamp] - [08:45]
-
-  Conclusion: [Final summary and takeaways] - [10:00]"
-
-- ALWAYS include at least 5-7 timestamps in your video summaries
-- Use realistic timestamps that make sense for the video content
-- Include timestamps for introduction, key points, and conclusion
-- For longer videos, provide more timestamps to cover the content adequately
+- Include 3-5 key timestamps, not exhaustive lists
 
 GENERAL KNOWLEDGE:
-- Answer questions about any topic: science, history, technology, etc.
-- Help with coding, writing, analysis, and creative tasks
-- Provide explanations and detailed information
-- Offer multiple perspectives when appropriate
+- Answer questions directly and helpfully
+- Provide clear explanations without unnecessary detail
+- Be conversational and natural
 
 SCREEN ANALYSIS:
-- Describe visible content, text, images, and layouts
-- Analyze code, documents, websites, and applications
-- Provide insights based on what's shown on screen
-- Help with troubleshooting and understanding visual content`;
+- Briefly describe what's visible
+- Focus on main content and key elements
+- Avoid exhaustive descriptions`;
 
   let contextPrompt = basePersonality;
 
   // Add URL context if available
   if (currentUrl) {
-    contextPrompt += `\n\nCURRENT URL CONTEXT: The user is currently on ${currentUrl}.`;
+    contextPrompt += `\n\nCurrent URL: ${currentUrl}`;
 
-    // Special handling for YouTube and video platforms
     if (currentUrl.includes("youtube.com") || currentUrl.includes("youtu.be")) {
-      contextPrompt += `\n\n🎬 VIDEO CONTEXT DETECTED: This is a YouTube video. You MUST:
-      • Provide a detailed summary with timestamps
-      • Include at least 5-7 realistic timestamps
-      • Structure the response with clear sections
-      • Cover introduction, key points, and conclusion
-      • Use the exact timestamp format shown above`;
-
-      // Check if the prompt is asking for summarization
-      const summaryKeywords = [
-        "summarize",
-        "summary",
-        "what's this about",
-        "explain this video",
-        "tell me about this video",
-      ];
-      const isAskingForSummary = summaryKeywords.some((keyword) =>
-        prompt.toLowerCase().includes(keyword)
-      );
-
-      if (isAskingForSummary) {
-        contextPrompt += `\n\n📝 SUMMARY REQUEST DETECTED: The user is asking for a video summary. Provide a comprehensive breakdown with timestamps.`;
-      }
+      contextPrompt += `\n\nThis is a YouTube video. Provide a concise summary with 3-5 key timestamps.`;
     }
-
-    contextPrompt += `\n\nUse this URL context to enhance your responses, but remember you can also answer general questions unrelated to the current page.`;
   }
 
   // Add image context
   if (hasImage) {
-    contextPrompt += `\n\n📸 SCREENSHOT PROVIDED: You are viewing the user's screen. Analyze what's visible and provide relevant insights.`;
+    contextPrompt += `\n\nScreen provided: Briefly describe what you see.`;
   } else {
-    contextPrompt += `\n\n💭 NO SCREENSHOT: You are in general assistant mode. Answer the user's question based on your knowledge.`;
+    contextPrompt += `\n\nNo screen: Answer the question based on your knowledge.`;
   }
 
-  // Check if the prompt is asking for video content specifically
-  const videoKeywords = [
-    "video",
-    "youtube",
-    "summarize",
-    "summary",
-    "timestamp",
-    "minute",
-    "second",
-  ];
-  const isVideoRelated = videoKeywords.some((keyword) =>
-    prompt.toLowerCase().includes(keyword)
+  // Special instruction for simple interactions
+  const simplePrompts = ["hi", "hello", "hey", "how are you", "what's up"];
+  const isSimplePrompt = simplePrompts.some((simple) =>
+    prompt.toLowerCase().trim().includes(simple)
   );
 
-  if (
-    isVideoRelated &&
-    currentUrl &&
-    (currentUrl.includes("youtube.com") || currentUrl.includes("youtu.be"))
-  ) {
-    contextPrompt += `\n\n⏰ TIMESTAMP REQUIREMENT: User is asking about video content. You MUST include detailed timestamps in your response.`;
+  if (isSimplePrompt) {
+    contextPrompt += `\n\nIMPORTANT: This is a simple greeting. Respond briefly and naturally - 1-2 sentences maximum.`;
   }
 
   if (conversationHistory) {
     return `${contextPrompt}
 
-PREVIOUS CONVERSATION:
+Previous conversation:
 ${conversationHistory}
 
-CURRENT QUESTION: ${prompt}
+Current question: ${prompt}
 
-Respond naturally and helpfully as Watchwing.`;
+Respond naturally and concisely as Watchwing.`;
   }
 
   return `${contextPrompt}
 
-USER QUESTION: ${prompt || "Hello, how can you help me?"}
+User: ${prompt || "Hello"}
 
-Respond as Watchwing - ready to help with both screen analysis and general questions.`;
+Respond briefly and naturally as Watchwing.`;
 }
 
 // Enhanced response processing
@@ -255,9 +248,12 @@ function processAIResponse(rawText: string): string {
   return processedText;
 }
 
-// Enhanced request function with better error handling
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-async function attemptGeminiRequest(contents: any, maxRetries = 3) {
+// Enhanced request function with better error handling and dynamic token limits
+async function attemptGeminiRequest(
+  contents: any,
+  maxTokens: number,
+  maxRetries = 3
+) {
   let lastError: Error | null = null;
 
   for (let attempt = 0; attempt < maxRetries; attempt++) {
@@ -271,7 +267,7 @@ async function attemptGeminiRequest(contents: any, maxRetries = 3) {
           temperature: 0.4,
           topK: 40,
           topP: 0.9,
-          maxOutputTokens: 1200, // Increased for detailed timestamped responses
+          maxOutputTokens: maxTokens, // Dynamic token limit
         },
       });
 
@@ -360,6 +356,9 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    // Calculate appropriate max tokens based on prompt complexity
+    const maxTokens = getMaxTokensForPrompt(prompt, hasImage);
+
     // Build intelligent prompt with context awareness
     const finalPrompt = buildIntelligentPrompt(
       prompt,
@@ -403,8 +402,8 @@ export async function POST(req: NextRequest) {
       ];
     }
 
-    // Attempt the request with retry logic
-    const result = await attemptGeminiRequest(contents);
+    // Attempt the request with retry logic and dynamic token limit
+    const result = await attemptGeminiRequest(contents, maxTokens);
 
     if (result.success) {
       return NextResponse.json(
@@ -413,6 +412,7 @@ export async function POST(req: NextRequest) {
           success: true,
           keyIndex: currentKeyIndex,
           mode: hasImage ? "screen_analysis" : "general_assistant",
+          tokensUsed: maxTokens,
         },
         { headers: corsHeaders }
       );

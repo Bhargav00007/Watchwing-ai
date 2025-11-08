@@ -11,6 +11,51 @@ const page = () => {
         <GridPatternCard>
           <GridPatternCardBody>
             <h3 className="text-lg font-bold mb-1 text-foreground">
+              WatchWing AI – Smarter Tokens & Precision Update
+            </h3>
+            <p className="text-sm text-gray-400 mb-1">Version 1.3.1</p>
+            <p className="text-xs text-gray-500 mb-3">10 November 2025</p>
+
+            <div className="text-wrap text-sm text-foreground/60 space-y-3">
+              <p>
+                WatchWing AI becomes even more efficient with adaptive token
+                usage, advanced YouTube summarization, and smarter coding
+                responses.
+              </p>
+
+              <div className="space-y-2">
+                <h4 className="font-semibold text-foreground">
+                  What&apos;s New:
+                </h4>
+                <ul className="space-y-1 ml-4">
+                  <li>
+                    • <strong>Adaptive Token System</strong> – AI now uses only
+                    the tokens required, never the maximum, improving speed and
+                    efficiency
+                  </li>
+                  <li>
+                    • <strong>YouTube Timestamp Summaries</strong> – Automatic
+                    chapter-style video summaries with accurate timestamps
+                  </li>
+                  <li>
+                    • <strong>Precise Code Rendering</strong> – AI now detects
+                    the programming language and formats code blocks accordingly
+                  </li>
+                  <li>
+                    • <strong>Smarter Interaction Model</strong> – Improved
+                    logic, faster reasoning, and enhanced response accuracy
+                  </li>
+                </ul>
+              </div>
+            </div>
+          </GridPatternCardBody>
+        </GridPatternCard>
+      </div>
+
+      <div className="my-5">
+        <GridPatternCard>
+          <GridPatternCardBody>
+            <h3 className="text-lg font-bold mb-1 text-foreground">
               WatchWing AI – Voice & Customization Update
             </h3>
             <p className="text-sm text-gray-400 mb-1">Version 1.3.0</p>

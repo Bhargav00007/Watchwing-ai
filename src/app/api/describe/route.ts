@@ -13,6 +13,8 @@ const GEMINI_KEYS = [
   process.env.GEMINI_API_KEY_7,
   process.env.GEMINI_API_KEY_8,
   process.env.GEMINI_API_KEY_9,
+  process.env.GEMINI_API_KEY_10,
+  process.env.GEMINI_API_KEY_11,
 ].filter(Boolean);
 
 const MODEL = process.env.GEMINI_MODEL || "gemini-2.5-flash";
@@ -29,9 +31,30 @@ const corsHeaders = {
   "Content-Type": "application/json",
 };
 
-// Track current active key index
-let currentKeyIndex = 0;
-const keyErrors = new Map<string, number>();
+// Enhanced key management system
+interface KeyStatus {
+  errorCount: number;
+  lastErrorTime: number;
+  isBlacklisted: boolean;
+  consecutiveErrors: number;
+}
+
+const keyStatusMap = new Map<string, KeyStatus>();
+const MAX_CONSECUTIVE_ERRORS = 3;
+const ERROR_RESET_TIME = 5 * 60 * 1000; // 5 minutes
+const BLACKLIST_TIME = 15 * 60 * 1000; // 15 minutes
+
+// Initialize key status for all keys
+GEMINI_KEYS.forEach((key) => {
+  if (key) {
+    keyStatusMap.set(key, {
+      errorCount: 0,
+      lastErrorTime: 0,
+      isBlacklisted: false,
+      consecutiveErrors: 0,
+    });
+  }
+});
 
 // Handle CORS preflight
 export async function OPTIONS() {
@@ -41,52 +64,119 @@ export async function OPTIONS() {
   });
 }
 
-// Function to get current active key
-function getCurrentKey() {
-  return GEMINI_KEYS[currentKeyIndex];
-}
+// Get a random available key
+function getRandomAvailableKey(): string | null {
+  const now = Date.now();
 
-// Function to rotate to next available key
-function rotateToNextKey() {
-  const originalIndex = currentKeyIndex;
-
-  do {
-    currentKeyIndex = (currentKeyIndex + 1) % GEMINI_KEYS.length;
-
-    if (currentKeyIndex === originalIndex) {
-      resetErrorCounts();
-      break;
+  // Reset blacklisted keys if enough time has passed
+  keyStatusMap.forEach((status, key) => {
+    if (status.isBlacklisted && now - status.lastErrorTime > BLACKLIST_TIME) {
+      console.log(`Key ${GEMINI_KEYS.indexOf(key)} removed from blacklist`);
+      status.isBlacklisted = false;
+      status.errorCount = 0;
+      status.consecutiveErrors = 0;
     }
 
-    const currentKey = GEMINI_KEYS[currentKeyIndex];
-    const errorCount = keyErrors.get(currentKey!) || 0;
-
-    if (errorCount < 3) {
-      console.log(`Switched to API key index: ${currentKeyIndex}`);
-      break;
+    // Reset error count if enough time has passed
+    if (now - status.lastErrorTime > ERROR_RESET_TIME) {
+      status.errorCount = 0;
+      status.consecutiveErrors = 0;
     }
-  } while (currentKeyIndex !== originalIndex);
+  });
 
-  return getCurrentKey();
+  // Get all available (non-blacklisted) keys
+  const availableKeys = GEMINI_KEYS.filter((key) => {
+    if (!key) return false;
+    const status = keyStatusMap.get(key);
+    return status && !status.isBlacklisted;
+  });
+
+  if (availableKeys.length === 0) {
+    console.error("All API keys are currently blacklisted");
+    return null;
+  }
+
+  // Sort by error count (prefer keys with fewer errors)
+  availableKeys.sort((a, b) => {
+    const statusA = keyStatusMap.get(a!)!;
+    const statusB = keyStatusMap.get(b!)!;
+    return statusA.errorCount - statusB.errorCount;
+  });
+
+  // Pick a random key from the top 50% least-errored keys
+  const topHalf = Math.max(1, Math.ceil(availableKeys.length / 2));
+  const randomIndex = Math.floor(Math.random() * topHalf);
+  const selectedKey = availableKeys[randomIndex];
+
+  const keyIndex = GEMINI_KEYS.indexOf(selectedKey!);
+  console.log(
+    `Selected random API key index: ${keyIndex} (${availableKeys.length} available)`
+  );
+
+  return selectedKey!;
 }
 
-// Function to increment error count for a key
-function incrementErrorCount(key: string) {
-  const count = keyErrors.get(key) || 0;
-  keyErrors.set(key, count + 1);
+// Record error for a key
+function recordKeyError(
+  key: string,
+  errorType: "quota" | "rate_limit" | "service" | "other"
+) {
+  const status = keyStatusMap.get(key);
+  if (!status) return;
 
-  setTimeout(() => {
-    keyErrors.delete(key);
-  }, 5 * 60 * 1000);
+  const now = Date.now();
+  status.errorCount++;
+  status.consecutiveErrors++;
+  status.lastErrorTime = now;
+
+  const keyIndex = GEMINI_KEYS.indexOf(key);
+
+  // Blacklist key if too many consecutive errors
+  if (status.consecutiveErrors >= MAX_CONSECUTIVE_ERRORS) {
+    status.isBlacklisted = true;
+    console.warn(
+      `API key ${keyIndex} blacklisted after ${status.consecutiveErrors} consecutive errors (Type: ${errorType})`
+    );
+  } else {
+    console.log(
+      `Error recorded for key ${keyIndex}: ${status.errorCount} total, ${status.consecutiveErrors} consecutive (Type: ${errorType})`
+    );
+  }
 }
 
-// Function to reset all error counts
-function resetErrorCounts() {
-  keyErrors.clear();
-  console.log("Reset all API key error counts");
+// Record success for a key (reset consecutive errors)
+function recordKeySuccess(key: string) {
+  const status = keyStatusMap.get(key);
+  if (!status) return;
+
+  status.consecutiveErrors = 0;
+  const keyIndex = GEMINI_KEYS.indexOf(key);
+  console.log(`Successful request with key ${keyIndex}`);
 }
 
-// Function to create Gemini client with a specific key
+// Classify error type
+function classifyError(
+  error: Error
+): "quota" | "rate_limit" | "service" | "other" {
+  const errorMessage = error.message.toLowerCase();
+
+  if (errorMessage.includes("quota") || errorMessage.includes("429")) {
+    return "quota";
+  }
+  if (errorMessage.includes("rate limit")) {
+    return "rate_limit";
+  }
+  if (
+    errorMessage.includes("503") ||
+    errorMessage.includes("overload") ||
+    errorMessage.includes("service unavailable")
+  ) {
+    return "service";
+  }
+  return "other";
+}
+
+// Create Gemini client with a specific key
 function createGeminiClient(apiKey: string) {
   return new GoogleGenerativeAI(apiKey);
 }
@@ -106,30 +196,25 @@ function getMaxTokensForPrompt(
 
   const cleanPrompt = prompt.toLowerCase().trim();
 
-  // Very short responses for simple greetings
   if (
     simpleGreetings.includes(cleanPrompt) ||
     shortQuestions.some((q) => cleanPrompt.includes(q))
   ) {
-    return 150; // Very short for simple interactions
+    return 150;
   }
 
-  // Short responses for basic questions
   if (cleanPrompt.length < 20 && !hasImage) {
     return 300;
   }
 
-  // Medium responses for normal questions without images
   if (!hasImage && cleanPrompt.length < 100) {
     return 600;
   }
 
-  // Longer responses for complex questions or with images
   if (hasImage || cleanPrompt.length >= 100) {
     return 1000;
   }
 
-  // Default for unknown cases
   return 600;
 }
 
@@ -180,7 +265,6 @@ SCREEN ANALYSIS:
 
   let contextPrompt = basePersonality;
 
-  // Add URL context if available
   if (currentUrl) {
     contextPrompt += `\n\nCurrent URL: ${currentUrl}`;
 
@@ -189,14 +273,12 @@ SCREEN ANALYSIS:
     }
   }
 
-  // Add image context
   if (hasImage) {
     contextPrompt += `\n\nScreen provided: Briefly describe what you see.`;
   } else {
     contextPrompt += `\n\nNo screen: Answer the question based on your knowledge.`;
   }
 
-  // Special instruction for simple interactions
   const simplePrompts = ["hi", "hello", "hey", "how are you", "what's up"];
   const isSimplePrompt = simplePrompts.some((simple) =>
     prompt.toLowerCase().trim().includes(simple)
@@ -230,13 +312,11 @@ function processAIResponse(rawText: string): string {
     return "I'm having trouble processing your request right now. Could you try asking in a different way or provide more context?";
   }
 
-  // Clean up common Gemini response artifacts
   let processedText = rawText
-    .replace(/^```\w*\n?/g, "") // Remove leading code block markers
-    .replace(/\n?```$/g, "") // Remove trailing code block markers
+    .replace(/^```\w*\n?/g, "")
+    .replace(/\n?```$/g, "")
     .trim();
 
-  // Ensure code blocks are properly formatted for frontend display
   processedText = processedText.replace(
     /```(\w+)?\s*([\s\S]*?)```/g,
     (match, lang, code) => {
@@ -248,26 +328,47 @@ function processAIResponse(rawText: string): string {
   return processedText;
 }
 
-// Enhanced request function with better error handling and dynamic token limits
+// Enhanced request function with random key selection
 async function attemptGeminiRequest(
   contents: any,
   maxTokens: number,
-  maxRetries = 3
+  maxRetries = GEMINI_KEYS.length * 2 // Try up to twice the number of available keys
 ) {
   let lastError: Error | null = null;
+  const attemptedKeys = new Set<string>();
 
   for (let attempt = 0; attempt < maxRetries; attempt++) {
-    const currentKey = getCurrentKey();
-    const genAI = createGeminiClient(currentKey!);
+    // Get a random available key
+    const currentKey = getRandomAvailableKey();
+
+    if (!currentKey) {
+      console.error("No available API keys to try");
+      return {
+        success: false,
+        error:
+          "All API keys are temporarily unavailable. Please try again later.",
+      };
+    }
+
+    // Skip if we've already tried this key in this request
+    if (attemptedKeys.has(currentKey)) {
+      continue;
+    }
+
+    attemptedKeys.add(currentKey);
+    const keyIndex = GEMINI_KEYS.indexOf(currentKey);
 
     try {
+      console.log(`Attempt ${attempt + 1}/${maxRetries} with key ${keyIndex}`);
+
+      const genAI = createGeminiClient(currentKey);
       const model = genAI.getGenerativeModel({
         model: MODEL,
         generationConfig: {
           temperature: 0.4,
           topK: 40,
           topP: 0.9,
-          maxOutputTokens: maxTokens, // Dynamic token limit
+          maxOutputTokens: maxTokens,
         },
       });
 
@@ -285,46 +386,92 @@ async function attemptGeminiRequest(
 
       const processedText = processAIResponse(text);
 
-      return { success: true, text: processedText };
+      // Record success
+      recordKeySuccess(currentKey);
+
+      return {
+        success: true,
+        text: processedText,
+        keyIndex: keyIndex,
+      };
     } catch (err: unknown) {
       lastError = err instanceof Error ? err : new Error(String(err));
+      const errorType = classifyError(lastError);
 
       console.error(
-        `Attempt ${attempt + 1} failed with key ${currentKeyIndex}:`,
+        `Attempt ${attempt + 1} failed with key ${keyIndex} (${errorType}):`,
         lastError.message
       );
 
-      incrementErrorCount(currentKey!);
+      // Record error for this key
+      recordKeyError(currentKey, errorType);
 
-      const errorMessage = lastError.message.toLowerCase();
+      // Check if error is retryable
       const isRetryableError =
-        errorMessage.includes("overload") ||
-        errorMessage.includes("503") ||
-        errorMessage.includes("429") ||
-        errorMessage.includes("quota") ||
-        errorMessage.includes("rate limit") ||
-        errorMessage.includes("service unavailable") ||
-        errorMessage.includes("empty response") ||
-        errorMessage.includes("empty text");
+        errorType === "quota" ||
+        errorType === "rate_limit" ||
+        errorType === "service" ||
+        lastError.message.toLowerCase().includes("empty response") ||
+        lastError.message.toLowerCase().includes("empty text");
 
-      if (isRetryableError && attempt < maxRetries - 1) {
-        console.log(`Retryable error detected, rotating API key...`);
-        rotateToNextKey();
-
-        await new Promise((resolve) =>
-          setTimeout(resolve, Math.pow(2, attempt) * 1000)
-        );
-        continue;
+      if (!isRetryableError) {
+        console.error("Non-retryable error encountered:", lastError.message);
+        break;
       }
 
-      break;
+      // Add exponential backoff for service errors
+      if (errorType === "service" && attempt < maxRetries - 1) {
+        const backoffTime = Math.min(1000 * Math.pow(2, attempt), 5000);
+        console.log(`Service error - backing off for ${backoffTime}ms`);
+        await new Promise((resolve) => setTimeout(resolve, backoffTime));
+      }
     }
   }
 
+  // Generate user-friendly error message
+  const errorMessage = lastError?.message || "All retry attempts failed";
+  const userFriendlyError = generateUserFriendlyError(errorMessage);
+
   return {
     success: false,
-    error: lastError?.message || "All retry attempts failed",
+    error: userFriendlyError,
+    technicalError:
+      process.env.NODE_ENV === "development" ? errorMessage : undefined,
   };
+}
+
+// Generate user-friendly error messages
+function generateUserFriendlyError(technicalError: string): string {
+  const errorLower = technicalError.toLowerCase();
+
+  if (errorLower.includes("quota") || errorLower.includes("429")) {
+    return "Our AI service quota has been reached. Please try again in a few minutes.";
+  }
+
+  if (errorLower.includes("rate limit")) {
+    return "Too many requests at the moment. Please wait a few seconds and try again.";
+  }
+
+  if (
+    errorLower.includes("503") ||
+    errorLower.includes("overload") ||
+    errorLower.includes("service unavailable")
+  ) {
+    return "The AI service is temporarily busy. Please try again in a moment.";
+  }
+
+  if (
+    errorLower.includes("empty response") ||
+    errorLower.includes("empty text")
+  ) {
+    return "The AI didn't provide a response. Please try rephrasing your question.";
+  }
+
+  if (errorLower.includes("all api keys")) {
+    return "All our AI services are temporarily unavailable. Please try again in a few minutes.";
+  }
+
+  return "Something went wrong while processing your request. Please try again.";
 }
 
 // Handle POST request from Chrome extension
@@ -332,7 +479,6 @@ export async function POST(req: NextRequest) {
   try {
     const { image, prompt, conversationHistory, currentUrl } = await req.json();
 
-    // Check if we have at least a prompt or image
     if (!prompt && !image) {
       return NextResponse.json(
         { error: "Either prompt or image is required" },
@@ -344,22 +490,17 @@ export async function POST(req: NextRequest) {
     let base64 = "";
     let mimeType = "image/png";
 
-    // Process image if provided
     if (image) {
       const match = image.match(/^data:(.+);base64,(.*)$/);
       if (match) {
         mimeType = match[1];
         base64 = match[2];
       } else {
-        // If it's already base64 without data URL prefix
         base64 = image;
       }
     }
 
-    // Calculate appropriate max tokens based on prompt complexity
     const maxTokens = getMaxTokensForPrompt(prompt, hasImage);
-
-    // Build intelligent prompt with context awareness
     const finalPrompt = buildIntelligentPrompt(
       prompt,
       conversationHistory,
@@ -367,11 +508,9 @@ export async function POST(req: NextRequest) {
       hasImage
     );
 
-    // Create the content structure based on whether we have an image
     let contents;
 
     if (hasImage) {
-      // With image: multimodal request
       contents = [
         {
           role: "user",
@@ -389,7 +528,6 @@ export async function POST(req: NextRequest) {
         },
       ];
     } else {
-      // Without image: text-only request
       contents = [
         {
           role: "user",
@@ -402,7 +540,6 @@ export async function POST(req: NextRequest) {
       ];
     }
 
-    // Attempt the request with retry logic and dynamic token limit
     const result = await attemptGeminiRequest(contents, maxTokens);
 
     if (result.success) {
@@ -410,26 +547,18 @@ export async function POST(req: NextRequest) {
         {
           text: result.text,
           success: true,
-          keyIndex: currentKeyIndex,
+          keyIndex: result.keyIndex,
           mode: hasImage ? "screen_analysis" : "general_assistant",
           tokensUsed: maxTokens,
         },
         { headers: corsHeaders }
       );
     } else {
-      // Provide more user-friendly error messages
-      const errorMessageText = result.error ?? "";
-      const userFriendlyError = errorMessageText.includes("quota")
-        ? "API quota exceeded. Please try again later or contact support."
-        : errorMessageText.includes("rate limit")
-        ? "Rate limit reached. Please wait a moment and try again."
-        : "I'm having trouble processing your request right now. Please try again.";
-
       return NextResponse.json(
         {
-          error: userFriendlyError,
+          error: result.error,
           success: false,
-          keyIndex: currentKeyIndex,
+          technicalError: result.technicalError,
         },
         { status: 500, headers: corsHeaders }
       );
@@ -439,10 +568,11 @@ export async function POST(req: NextRequest) {
 
     const message =
       err instanceof Error ? err.message : "Internal server error";
+    const userFriendlyError = generateUserFriendlyError(message);
 
     return NextResponse.json(
       {
-        error: "An unexpected error occurred. Please try again.",
+        error: userFriendlyError,
         success: false,
         debug: process.env.NODE_ENV === "development" ? message : undefined,
       },

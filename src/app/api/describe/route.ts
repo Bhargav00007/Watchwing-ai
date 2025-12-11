@@ -194,7 +194,16 @@ function getMaxTokensForPrompt(
     "what's up?",
   ];
 
+  // Detect coding-related prompts or coding platforms
+  const isCodingRelated = detectCodingContext(prompt, hasImage);
+
   const cleanPrompt = prompt.toLowerCase().trim();
+
+  // For coding questions or screenshots of coding problems, use maximum tokens
+  if (isCodingRelated) {
+    console.log("Coding context detected - using maximum tokens");
+    return 4000; // Maximum tokens for complex coding solutions
+  }
 
   if (
     simpleGreetings.includes(cleanPrompt) ||
@@ -218,6 +227,102 @@ function getMaxTokensForPrompt(
   return 600;
 }
 
+// Detect if the context involves coding problems or platforms
+function detectCodingContext(
+  prompt: string = "",
+  hasImage: boolean = false
+): boolean {
+  const codingKeywords = [
+    "hackerrank",
+    "leetcode",
+    "codeforces",
+    "codewars",
+    "geeksforgeeks",
+    "coding",
+    "algorithm",
+    "data structure",
+    "function",
+    "class",
+    "method",
+    "solve",
+    "solution",
+    "problem",
+    "challenge",
+    "test case",
+    "time complexity",
+    "space complexity",
+    "debug",
+    "error",
+    "exception",
+    "compile",
+    "runtime",
+    "programming",
+    "code",
+    "syntax",
+    "variable",
+    "loop",
+    "array",
+    "string",
+    "linked list",
+    "tree",
+    "graph",
+    "dynamic programming",
+    "recursion",
+    "sort",
+    "search",
+    "binary",
+    "hash",
+    "stack",
+    "queue",
+    "heap",
+  ];
+
+  const platformUrls = [
+    "hackerrank.com",
+    "leetcode.com",
+    "codeforces.com",
+    "codewars.com",
+    "geeksforgeeks.org",
+    "codingame.com",
+    "topcoder.com",
+    "atcoder.jp",
+  ];
+
+  const promptLower = prompt.toLowerCase();
+
+  // Check for coding keywords in prompt
+  const hasCodingKeyword = codingKeywords.some((keyword) =>
+    promptLower.includes(keyword.toLowerCase())
+  );
+
+  // Check for coding platform URLs
+  const hasCodingPlatform = platformUrls.some((platform) =>
+    promptLower.includes(platform)
+  );
+
+  // If user explicitly mentions coding help
+  const explicitCodingRequest =
+    promptLower.includes("coding help") ||
+    promptLower.includes("solve this code") ||
+    promptLower.includes("programming problem") ||
+    promptLower.includes("algorithm question");
+
+  // Image context might show coding IDE or problem statement
+  const imageContext =
+    hasImage &&
+    (promptLower.includes("code") ||
+      promptLower.includes("problem") ||
+      promptLower.includes("question") ||
+      promptLower.includes("solve"));
+
+  return (
+    hasCodingKeyword ||
+    hasCodingPlatform ||
+    explicitCodingRequest ||
+    imageContext
+  );
+}
+
 // Enhanced prompt engineering for intelligent but concise responses
 function buildIntelligentPrompt(
   prompt: string = "",
@@ -225,10 +330,13 @@ function buildIntelligentPrompt(
   currentUrl?: string,
   hasImage: boolean = true
 ) {
-  const basePersonality = `You are Watchwing - an intelligent AI assistant developed by Bhargav Pattanayak. You have two modes:
+  const isCodingContext = detectCodingContext(prompt, hasImage);
+
+  const basePersonality = `You are Watchwing - an intelligent AI assistant developed by Bhargav Pattanayak. You have multiple modes:
 
 1. SCREEN ANALYSIS: When you receive a screen, briefly describe what's visible
 2. GENERAL ASSISTANT: When no screen, be a helpful AI assistant
+3. CODING TUTOR: When helping with coding practice or technical assessments
 
 CRITICAL GUIDELINES:
 - Be helpful but CONCISE - avoid long introductions or explanations
@@ -236,7 +344,55 @@ CRITICAL GUIDELINES:
 - For screen: Focus on key elements only
 - For general questions: Provide direct, helpful answers
 - Use natural, conversational language
-- Keep responses appropriate to question length and complexity
+- Keep responses appropriate to question length and complexity`;
+
+  // Add coding-specific guidelines when context is detected
+  const codingGuidelines = isCodingContext
+    ? `
+
+CODING PRACTICE ASSISTANCE MODE:
+You are now in Coding Practice Assistant mode. Help users understand and solve coding problems for learning purposes and generate the entire answer.
+
+ETHICAL GUIDELINES FOR CODING HELP:
+1. Provide EXPLANATIONS along with code solutions
+2. Focus on TEACHING concepts, not just giving answers
+3. Suggest multiple approaches with pros/cons
+4. Explain time and space complexity
+5. Provide code with comments
+6. Encourage learning and understanding
+7. Remind users that practice builds real skills
+
+CODING RESPONSE FORMAT:
+For coding problems, structure your response as:
+
+[Brief Problem Understanding]
+- What the problem is asking
+- Key constraints and requirements
+
+[Approach]
+1. Explain the algorithm/approach
+2. Time Complexity: O(?)
+3. Space Complexity: O(?)
+
+[Solution Code]
+\`\`\`[language]
+// Well-commented code
+// Explain key parts
+\`\`\`
+
+[Key Learning Points]
+- What concepts this problem teaches
+- How to apply this knowledge
+- Common pitfalls to avoid
+
+[Practice Tips]
+- Similar problems to try
+- Resources for deeper learning
+
+Remember: The goal is  just getting the answer right.`
+    : "";
+
+  const specialCapabilities = `
 
 SPECIAL CAPABILITIES:
 
@@ -263,7 +419,7 @@ SCREEN ANALYSIS:
 - Focus on main content and key elements
 - Avoid exhaustive descriptions`;
 
-  let contextPrompt = basePersonality;
+  let contextPrompt = basePersonality + codingGuidelines + specialCapabilities;
 
   if (currentUrl) {
     contextPrompt += `\n\nCurrent URL: ${currentUrl}`;
@@ -271,10 +427,27 @@ SCREEN ANALYSIS:
     if (currentUrl.includes("youtube.com") || currentUrl.includes("youtu.be")) {
       contextPrompt += `\n\nThis is a YouTube video. Provide a concise summary with 3-5 key timestamps.`;
     }
+
+    // Detect coding practice platforms
+    const codingPlatforms = [
+      "hackerrank.com",
+      "leetcode.com",
+      "codeforces.com",
+    ];
+    const isCodingPlatform = codingPlatforms.some((platform) =>
+      currentUrl.includes(platform)
+    );
+
+    if (isCodingPlatform) {
+      contextPrompt += `\n\nUser is on a coding practice platform. Provide thorough, educational coding assistance.`;
+    }
   }
 
   if (hasImage) {
     contextPrompt += `\n\nScreen provided: Briefly describe what you see.`;
+    if (isCodingContext) {
+      contextPrompt += ` If it shows a coding problem, analyze it and provide educational assistance.`;
+    }
   } else {
     contextPrompt += `\n\nNo screen: Answer the question based on your knowledge.`;
   }
@@ -284,7 +457,7 @@ SCREEN ANALYSIS:
     prompt.toLowerCase().trim().includes(simple)
   );
 
-  if (isSimplePrompt) {
+  if (isSimplePrompt && !isCodingContext) {
     contextPrompt += `\n\nIMPORTANT: This is a simple greeting. Respond briefly and naturally - 1-2 sentences maximum.`;
   }
 
@@ -296,14 +469,22 @@ ${conversationHistory}
 
 Current question: ${prompt}
 
-Respond naturally and concisely as Watchwing.`;
+Respond naturally and appropriately as Watchwing.${
+      isCodingContext
+        ? " Focus on educational value and thorough explanations."
+        : ""
+    }`;
   }
 
   return `${contextPrompt}
 
 User: ${prompt || "Hello"}
 
-Respond briefly and naturally as Watchwing.`;
+Respond appropriately as Watchwing.${
+    isCodingContext
+      ? " Provide detailed, educational coding assistance."
+      : " Be brief and natural."
+  }`;
 }
 
 // Enhanced response processing
@@ -317,6 +498,7 @@ function processAIResponse(rawText: string): string {
     .replace(/\n?```$/g, "")
     .trim();
 
+  // Preserve code blocks with proper formatting
   processedText = processedText.replace(
     /```(\w+)?\s*([\s\S]*?)```/g,
     (match, lang, code) => {
@@ -365,7 +547,7 @@ async function attemptGeminiRequest(
       const model = genAI.getGenerativeModel({
         model: MODEL,
         generationConfig: {
-          temperature: 0.4,
+          temperature: 0.3, // Lower temperature for more deterministic coding responses
           topK: 40,
           topP: 0.9,
           maxOutputTokens: maxTokens,
@@ -487,6 +669,8 @@ export async function POST(req: NextRequest) {
     }
 
     const hasImage = !!image;
+    const isCodingContext = detectCodingContext(prompt, hasImage);
+
     let base64 = "";
     let mimeType = "image/png";
 
@@ -548,8 +732,15 @@ export async function POST(req: NextRequest) {
           text: result.text,
           success: true,
           keyIndex: result.keyIndex,
-          mode: hasImage ? "screen_analysis" : "general_assistant",
+          mode: hasImage
+            ? isCodingContext
+              ? "coding_screen_analysis"
+              : "screen_analysis"
+            : isCodingContext
+            ? "coding_assistant"
+            : "general_assistant",
           tokensUsed: maxTokens,
+          isCodingContext: isCodingContext,
         },
         { headers: corsHeaders }
       );

@@ -1,4 +1,4 @@
-import { cn } from "../../app/lib/utils";
+import { cn } from "../../lib/utils";
 import React from "react";
 
 export interface CpuArchitectureSvgProps {
@@ -85,83 +85,83 @@ const CpuArchitecture = ({
 
       {/* 1. Blue Light */}
       <g mask="url(#cpu-mask-1)">
-        <circle
-          className="cpu-architecture cpu-line-1"
-          cx="0"
-          cy="0"
-          r="8"
-          fill="url(#cpu-blue-grad)"
-        />
+        <circle r="8" fill="url(#cpu-blue-grad)">
+          <animateMotion
+            dur="2s"
+            repeatCount="indefinite"
+            path="M 10 20 h 79.5 q 5 0 5 5 v 24"
+          />
+        </circle>
       </g>
-      {/* 2. Yellow Light */}
+
       <g mask="url(#cpu-mask-2)">
-        <circle
-          className="cpu-architecture cpu-line-2"
-          cx="0"
-          cy="0"
-          r="8"
-          fill="url(#cpu-yellow-grad)"
-        />
+        <circle r="8" fill="url(#cpu-yellow-grad)">
+          <animateMotion
+            dur="2.2s"
+            repeatCount="indefinite"
+            path="M 180 10 h -69.7 q -5 0 -5 5 v 24"
+          />
+        </circle>
       </g>
-      {/* 3. Pinkish Light */}
+
       <g mask="url(#cpu-mask-3)">
-        <circle
-          className="cpu-architecture cpu-line-3"
-          cx="0"
-          cy="0"
-          r="8"
-          fill="url(#cpu-pinkish-grad)"
-        />
+        <circle r="8" fill="url(#cpu-pinkish-grad)">
+          <animateMotion
+            dur="1.8s"
+            repeatCount="indefinite"
+            path="M 130 20 v 21.8 q 0 5 -5 5 h -10"
+          />
+        </circle>
       </g>
-      {/* 4. White Light */}
+
       <g mask="url(#cpu-mask-4)">
-        <circle
-          className="cpu-architecture cpu-line-4"
-          cx="0"
-          cy="0"
-          r="8"
-          fill="url(#cpu-white-grad)"
-        />
+        <circle r="8" fill="url(#cpu-white-grad)">
+          <animateMotion
+            dur="2.4s"
+            repeatCount="indefinite"
+            path="M 170 80 v -21.8 q 0 -5 -5 -5 h -50"
+          />
+        </circle>
       </g>
-      {/* 5. Green Light */}
+
       <g mask="url(#cpu-mask-5)">
-        <circle
-          className="cpu-architecture cpu-line-5"
-          cx="0"
-          cy="0"
-          r="8"
-          fill="url(#cpu-green-grad)"
-        />
+        <circle r="8" fill="url(#cpu-green-grad)">
+          <animateMotion
+            dur="2.6s"
+            repeatCount="indefinite"
+            path="M 135 65 h 15 q 5 0 5 5 v 10 q 0 5 -5 5 h -39.8 q -5 0 -5 -5 v -20"
+          />
+        </circle>
       </g>
-      {/* 6. Orange Light */}
+
       <g mask="url(#cpu-mask-6)">
-        <circle
-          className="cpu-architecture cpu-line-6"
-          cx="0"
-          cy="0"
-          r="8"
-          fill="url(#cpu-orange-grad)"
-        />
+        <circle r="8" fill="url(#cpu-orange-grad)">
+          <animateMotion
+            dur="1.7s"
+            repeatCount="indefinite"
+            path="M 94.8 95 v -36"
+          />
+        </circle>
       </g>
-      {/* 7. Cyan Light */}
+
       <g mask="url(#cpu-mask-7)">
-        <circle
-          className="cpu-architecture cpu-line-7"
-          cx="0"
-          cy="0"
-          r="8"
-          fill="url(#cpu-cyan-grad)"
-        />
+        <circle r="8" fill="url(#cpu-cyan-grad)">
+          <animateMotion
+            dur="2.3s"
+            repeatCount="indefinite"
+            path="M 88 88 v -15 q 0 -5 -5 -5 h -10 q -5 0 -5 -5 v -5 q 0 -5 5 -5 h 14"
+          />
+        </circle>
       </g>
-      {/* 8. Rose Light */}
+
       <g mask="url(#cpu-mask-8)">
-        <circle
-          className="cpu-architecture cpu-line-8"
-          cx="0"
-          cy="0"
-          r="8"
-          fill="url(#cpu-rose-grad)"
-        />
+        <circle r="8" fill="url(#cpu-rose-grad)">
+          <animateMotion
+            dur="2.1s"
+            repeatCount="indefinite"
+            path="M 30 30 h 25 q 5 0 5 5 v 6.5 q 0 5 5 5 h 20"
+          />
+        </circle>
       </g>
       {/* CPU Box */}
       <g>

@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { KeyManager } from "./key-manager";
-import { types } from "util";
+import { PromptBuilder } from "./prompt-builder";
 
 export interface GeminiResponse {
   success: boolean;
@@ -9,6 +9,7 @@ export interface GeminiResponse {
   error?: string;
   technicalError?: string;
   keyIndex?: number;
+  tokensUsed?: number;
 }
 
 export class GeminiService {
@@ -40,7 +41,47 @@ export class GeminiService {
       }
     );
 
+    // Clean up YouTube summary formatting
+    processedText = this.cleanYouTubeSummaryFormatting(processedText);
+
     return processedText;
+  }
+
+  // Clean up YouTube summary formatting
+  private static cleanYouTubeSummaryFormatting(text: string): string {
+    // Ensure proper markdown formatting for YouTube summaries
+    let result = text;
+
+    // Fix common formatting issues in YouTube summaries
+    result = result.replace(/\*\*🎬 Summary of\*\*/g, "**🎬 Summary of**");
+    result = result.replace(
+      /\*\*📝 Key Moments:\*\*/g,
+      "\n**📝 Key Moments:**"
+    );
+    result = result.replace(
+      /\*\*🎯 Main Takeaway:\*\*/g,
+      "\n**🎯 Main Takeaway:**"
+    );
+    result = result.replace(
+      /\*\*⏱️ Video Details:\*\*/g,
+      "\n**⏱️ Video Details:**"
+    );
+    result = result.replace(
+      /\*\*💡 Additional Insights:\*\*/g,
+      "\n**💡 Additional Insights:**"
+    );
+
+    // Ensure bullet points are properly formatted
+    result = result.replace(/^•\s*/gm, "• ");
+
+    // Add emoji formatting for better readability
+    result = result.replace(/\*\*🎬 /g, "**🎬 ");
+    result = result.replace(/\*\*📝 /g, "**📝 ");
+    result = result.replace(/\*\*🎯 /g, "**🎯 ");
+    result = result.replace(/\*\*⏱️ /g, "**⏱️ ");
+    result = result.replace(/\*\*💡 /g, "**💡 ");
+
+    return result;
   }
 
   // Enforce "screen" terminology instead of "image" or "screenshot"
@@ -105,6 +146,14 @@ export class GeminiService {
       return "All our AI services are temporarily unavailable. Please try again in a few minutes.";
     }
 
+    if (errorLower.includes("safety")) {
+      return "The content was blocked by safety filters. Please try rephrasing your question.";
+    }
+
+    if (errorLower.includes("token") && errorLower.includes("limit")) {
+      return "The response was too long. Please try asking a more specific question.";
+    }
+
     return "Something went wrong while processing your request. Please try again.";
   }
 
@@ -116,6 +165,7 @@ export class GeminiService {
   ): Promise<GeminiResponse> {
     let lastError: Error | null = null;
     const attemptedKeys = new Set<string>();
+    const startTime = Date.now();
 
     for (let attempt = 0; attempt < maxRetries; attempt++) {
       // Get a random available key
@@ -140,16 +190,18 @@ export class GeminiService {
 
       try {
         console.log(
-          `Attempt ${attempt + 1}/${maxRetries} with key ${keyIndex}`
+          `Attempt ${
+            attempt + 1
+          }/${maxRetries} with key ${keyIndex}, max tokens: ${maxTokens}`
         );
 
         const genAI = this.createGeminiClient(currentKey);
         const model = genAI.getGenerativeModel({
           model: KeyManager.getModel(),
           generationConfig: {
-            temperature: 0.3, // Lower temperature for more deterministic coding responses
+            temperature: 0.7, // Higher temperature for creative summarization
             topK: 40,
-            topP: 0.9,
+            topP: 0.95,
             maxOutputTokens: maxTokens,
           },
         });
@@ -167,14 +219,23 @@ export class GeminiService {
         }
 
         const processedText = this.processAIResponse(text);
+        const responseTime = Date.now() - startTime;
 
         // Record success
         KeyManager.recordKeySuccess(currentKey);
+
+        // Estimate tokens used (approximate)
+        const tokensUsed = Math.ceil(text.length / 4);
+
+        console.log(
+          `Request completed in ${responseTime}ms, estimated tokens: ${tokensUsed}`
+        );
 
         return {
           success: true,
           text: processedText,
           keyIndex: keyIndex,
+          tokensUsed: tokensUsed,
         };
       } catch (err: unknown) {
         lastError = err instanceof Error ? err : new Error(String(err));
@@ -220,5 +281,208 @@ export class GeminiService {
       technicalError:
         process.env.NODE_ENV === "development" ? errorMessage : undefined,
     };
+  }
+
+  // Specialized method for YouTube video summarization WITHOUT transcript
+  static async generateYouTubeSummaryFromURL(
+    videoId: string,
+    prompt: string = "",
+    videoTitle?: string,
+    channelName?: string,
+    duration?: string
+  ): Promise<GeminiResponse> {
+    try {
+      console.log(`Generating YouTube summary from URL for video: ${videoId}`);
+
+      // Build specialized YouTube prompt (NO transcript needed)
+      const youtubePrompt = PromptBuilder.buildYouTubeSummaryPromptFromURL(
+        videoId,
+        prompt,
+        videoTitle,
+        channelName,
+        duration
+      );
+
+      // Determine max tokens (INCREASED for better summaries)
+      const maxTokens = 3500; // Increased to allow comprehensive responses
+
+      console.log(
+        `YouTube summary tokens allocated: ${maxTokens}`,
+        videoTitle ? `Title: ${videoTitle}` : "",
+        channelName ? `Channel: ${channelName}` : ""
+      );
+
+      // Prepare content for Gemini
+      const contents = [
+        {
+          role: "user",
+          parts: [{ text: youtubePrompt }],
+        },
+      ];
+
+      // Generate content with specialized settings for summaries
+      const result = await this.generateContent(contents, maxTokens);
+
+      if (result.success && result.text) {
+        console.log(
+          "AI successfully generated YouTube summary with timestamps"
+        );
+
+        // Check if summary has timestamps
+        const hasTimestamps = /\[\d{1,2}:\d{2}\]/.test(result.text);
+
+        if (!hasTimestamps) {
+          console.warn("Generated summary doesn't contain timestamps");
+          // Add a fallback section at the end
+          result.text += `\n\n<span style="color: #ff0000; font-weight: bold;">Note:</span> I couldn't provide specific timestamps for this video. You can watch it to get the complete experience.`;
+        }
+      }
+
+      return result;
+    } catch (error) {
+      console.error("Error generating YouTube summary from URL:", error);
+      // Even on error, provide a helpful fallback
+      return {
+        success: true,
+        text: `<span style="color: #ff0000; font-weight: bold;">I am unable to summarize this video with timestamps, but here is what I know:</span>\n\nThis is a YouTube video (ID: ${videoId}). Based on the video information, I don't have specific details about its content. You might want to watch it directly to get the full experience.`,
+        technicalError: error instanceof Error ? error.message : String(error),
+      };
+    }
+  }
+
+  // Main entry point for generating responses
+  static async generateResponse(
+    prompt: string = "",
+    hasImage: boolean = false,
+    conversationHistory?: string,
+    currentUrl?: string,
+    youtubeVideoId?: string | null,
+    isCodingPlatform: boolean = false,
+    videoTranscript?: string,
+    videoTitle?: string,
+    channelName?: string,
+    videoDuration?: string
+  ): Promise<GeminiResponse> {
+    try {
+      // Check if this is a YouTube summary request
+      const isYouTubeSummary =
+        youtubeVideoId !== null ||
+        prompt.toLowerCase().includes("youtube") ||
+        prompt.toLowerCase().includes("summarize") ||
+        prompt.toLowerCase().includes("summary") ||
+        (currentUrl &&
+          (currentUrl.includes("youtube.com") ||
+            currentUrl.includes("youtu.be")));
+
+      // Use specialized method for YouTube summaries WITHOUT transcript
+      if (isYouTubeSummary && youtubeVideoId) {
+        return await this.generateYouTubeSummaryFromURL(
+          youtubeVideoId,
+          prompt,
+          videoTitle,
+          channelName,
+          videoDuration
+        );
+      }
+
+      // Regular request handling
+      const maxTokens = PromptBuilder.getMaxTokensForPrompt(
+        prompt,
+        hasImage,
+        youtubeVideoId,
+        isCodingPlatform
+      );
+
+      console.log(`Generating response with ${maxTokens} tokens`);
+
+      const intelligentPrompt = PromptBuilder.buildIntelligentPrompt(
+        prompt,
+        conversationHistory,
+        currentUrl,
+        hasImage,
+        youtubeVideoId,
+        isCodingPlatform,
+        videoTranscript
+      );
+
+      const contents = [
+        {
+          role: "user",
+          parts: [{ text: intelligentPrompt }],
+        },
+      ];
+
+      return await this.generateContent(contents, maxTokens);
+    } catch (error) {
+      console.error("Error in generateResponse:", error);
+      return {
+        success: false,
+        error: "Failed to process your request. Please try again.",
+        technicalError: error instanceof Error ? error.message : String(error),
+      };
+    }
+  }
+
+  // Direct method for summarizing YouTube video from URL
+  static async summarizeYouTubeVideo(
+    videoUrl: string,
+    customPrompt?: string
+  ): Promise<GeminiResponse> {
+    try {
+      // Extract video ID from URL
+      const videoId = this.extractVideoIdFromUrl(videoUrl);
+
+      if (!videoId) {
+        return {
+          success: false,
+          error:
+            "Invalid YouTube URL. Please provide a valid YouTube video URL.",
+        };
+      }
+
+      // Try to extract video title from URL or use generic
+      let videoTitle = "YouTube Video";
+      const titleMatch = videoUrl.match(/[?&]title=([^&]+)/);
+      if (titleMatch) {
+        videoTitle = decodeURIComponent(titleMatch[1]);
+      }
+
+      const prompt =
+        customPrompt ||
+        `Summarize this YouTube video with detailed timestamps: ${videoUrl}`;
+
+      return await this.generateYouTubeSummaryFromURL(
+        videoId,
+        prompt,
+        videoTitle,
+        "YouTube Channel", // Default channel name
+        undefined // duration
+      );
+    } catch (error) {
+      console.error("Error summarizing YouTube video:", error);
+      return {
+        success: true,
+        text: `<span style="color: #ff0000; font-weight: bold;">I am unable to summarize this video with timestamps, but here is what I know:</span>\n\nThis is a YouTube video. I don't have specific information about its content. You can watch it directly to get the full experience.`,
+        technicalError: error instanceof Error ? error.message : String(error),
+      };
+    }
+  }
+
+  // Helper method to extract video ID from URL
+  private static extractVideoIdFromUrl(url: string): string | null {
+    const patterns = [
+      /(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]+)/,
+      /youtube\.com\/embed\/([a-zA-Z0-9_-]+)/,
+      /youtube\.com\/v\/([a-zA-Z0-9_-]+)/,
+    ];
+
+    for (const pattern of patterns) {
+      const match = url.match(pattern);
+      if (match && match[1]) {
+        return match[1];
+      }
+    }
+
+    return null;
   }
 }

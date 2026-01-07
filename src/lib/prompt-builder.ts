@@ -4,7 +4,9 @@ export class PromptBuilder {
   // Determine appropriate max tokens based on prompt complexity
   static getMaxTokensForPrompt(
     prompt: string = "",
-    hasImage: boolean = false
+    hasImage: boolean = false,
+    youtubeVideoId?: string | null,
+    isCodingPlatform: boolean = false
   ): number {
     const simpleGreetings = ["hi", "hello", "hey", "hi!", "hello!", "hey!"];
     const shortQuestions = [
@@ -20,14 +22,31 @@ export class PromptBuilder {
       hasImage
     );
 
+    // Check for YouTube URLs or video summarization requests
+    const isYouTubePrompt =
+      youtubeVideoId !== null ||
+      prompt.includes("youtube.com") ||
+      prompt.includes("youtu.be") ||
+      prompt.toLowerCase().includes("youtube") ||
+      prompt.toLowerCase().includes("video summary") ||
+      prompt.toLowerCase().includes("summarize video") ||
+      prompt.toLowerCase().includes("summarize");
+
     const cleanPrompt = prompt.toLowerCase().trim();
 
-    // For coding questions or screenshots of coding problems, use maximum tokens
-    if (isCodingRelated) {
-      console.log("Coding context detected - using maximum tokens");
-      return 4000; // Maximum tokens for complex coding solutions
+    // PRIORITY 1: YouTube video summarization - use 3000 tokens (INCREASED)
+    if (isYouTubePrompt || youtubeVideoId) {
+      console.log("YouTube video summarization detected - using 3000 tokens");
+      return 2000;
     }
 
+    // PRIORITY 2: Coding questions or screenshots - use maximum tokens
+    if (isCodingRelated || isCodingPlatform) {
+      console.log("Coding context detected - using 4000 tokens");
+      return 2000; // Maximum tokens for complex coding solutions
+    }
+
+    // Simple greetings and short questions
     if (
       simpleGreetings.includes(cleanPrompt) ||
       shortQuestions.some((q) => cleanPrompt.includes(q))
@@ -35,19 +54,28 @@ export class PromptBuilder {
       return 150;
     }
 
+    // Very short prompts without images
     if (cleanPrompt.length < 20 && !hasImage) {
       return 300;
     }
 
+    // Short prompts without images
     if (!hasImage && cleanPrompt.length < 100) {
       return 600;
     }
 
+    // Prompts with images or longer text prompts
     if (hasImage || cleanPrompt.length >= 100) {
       return 1000;
     }
 
+    // Default for other cases
     return 600;
+  }
+
+  // Special method for YouTube video summarization
+  static getMaxTokensForYouTubeSummarization(): number {
+    return 3000; // Increased for better summaries
   }
 
   // Enhanced prompt engineering for intelligent but concise responses
@@ -55,9 +83,10 @@ export class PromptBuilder {
     prompt: string = "",
     conversationHistory?: string,
     currentUrl?: string,
-    hasImage: boolean = true,
+    hasImage: boolean = false,
     youtubeVideoId?: string | null,
-    isCodingPlatform: boolean = false
+    isCodingPlatform: boolean = false,
+    videoTranscript?: string
   ): string {
     const isCodingContext =
       CodingPlatformProcessor.detectCodingContext(prompt, hasImage) ||
@@ -76,6 +105,7 @@ IMPORTANT TERMINOLOGY RULES:
 1. SCREEN ANALYSIS: When you receive a screen, briefly describe what's visible on the screen
 2. GENERAL ASSISTANT: When no screen, be a helpful AI assistant
 3. CODING TUTOR: When helping with coding practice or technical assessments
+4. YOUTUBE SUMMARIZER: When asked to summarize YouTube videos
 
 CRITICAL GUIDELINES:
 - Be helpful but CONCISE - avoid long introductions or explanations
@@ -137,25 +167,28 @@ Remember: The goal is  just getting the answer right.`
       ? `
 
 YOUTUBE VIDEO SUMMARIZATION MODE:
-You are now in YouTube Video Summarization mode. Provide concise summaries with key timestamps.
+Summarize YouTube videos with timestamps.
 
-VIDEO SUMMARY GUIDELINES:
-- Extract 3-5 most important points from the video
-- Provide timestamps for each key point (format: [MM:SS])
-- Keep summary concise but informative
-- Highlight the main message/takeaway
-- Use bullet points for clarity
+RULES:
+1. Summarize video content briefly
+2. Include 3-5 key moments with timestamps
+3. Use format: [MM:SS] for timestamps
+4. Keep summary short and precise
+5. Highlight main takeaway
+6. Use bullet points
 
 RESPONSE FORMAT:
-Summary of '[Video Title]' from [Channel Name]:
-  
-• [Key point 1] - [00:30]
-• [Key point 2] - [01:15]
-• [Key point 3] - [02:45]
-  
-Conclusion: [Brief takeaway]
+**Summary of "[Video Title]" from [Channel Name]**
 
-Note: Don't invent timestamps if the video doesn't mention specific times.`
+**Key Moments:**
+• [00:30] - [Brief description]
+• [01:15] - [Brief description]
+• [02:45] - [Brief description]
+
+**Main Takeaway:**
+[1-2 sentence summary]
+
+If unknown video, say: <span style="color: #ff0000; font-weight: bold;">I am unable to summarize this video with timestamps</span>`
       : "";
 
     const specialCapabilities = `
@@ -163,8 +196,10 @@ Note: Don't invent timestamps if the video doesn't mention specific times.`
 SPECIAL CAPABILITIES:
 
 VIDEO SUMMARIZATION (YouTube URLs):
-- When detecting YouTube URLs, provide brief summaries with key timestamps
-- Use simple format as shown above
+- When detecting YouTube URLs, provide comprehensive summaries with timestamps
+- Use your knowledge about popular videos to give accurate summaries
+- Include approximate timestamps based on typical video structure
+- Be detailed and informative
 
 GENERAL KNOWLEDGE:
 - Answer questions directly and helpfully
@@ -183,11 +218,12 @@ SCREEN ANALYSIS:
       youtubeGuidelines +
       specialCapabilities;
 
+    // Add URL context
     if (currentUrl) {
       contextPrompt += `\n\nCurrent URL: ${currentUrl}`;
 
       if (isYouTubeContext) {
-        contextPrompt += `\n\nThis is a YouTube video. Provide a concise summary with 3-5 key timestamps.`;
+        contextPrompt += `\n\nThis is a YouTube video. Provide a comprehensive summary with 5-7 key timestamps based on your knowledge.`;
       }
 
       if (isCodingPlatform) {
@@ -195,6 +231,7 @@ SCREEN ANALYSIS:
       }
     }
 
+    // Handle image/screen context
     if (hasImage) {
       contextPrompt += `\n\nUser's screen provided: Briefly describe what you see on their screen.`;
       if (isCodingContext) {
@@ -204,6 +241,7 @@ SCREEN ANALYSIS:
       contextPrompt += `\n\nNo screen: Answer the question based on your knowledge.`;
     }
 
+    // Handle simple prompts
     const simplePrompts = ["hi", "hello", "hey", "how are you", "what's up"];
     const isSimplePrompt = simplePrompts.some((simple) =>
       prompt.toLowerCase().trim().includes(simple)
@@ -213,6 +251,7 @@ SCREEN ANALYSIS:
       contextPrompt += `\n\nIMPORTANT: This is a simple greeting. Respond briefly and naturally - 1-2 sentences maximum.`;
     }
 
+    // Build final prompt
     if (conversationHistory) {
       return `${contextPrompt}
 
@@ -225,7 +264,7 @@ Respond naturally and appropriately as Watchwing. ALWAYS use "screen" terminolog
         isCodingContext
           ? " Focus on educational value and thorough explanations."
           : isYouTubeContext
-          ? " Provide clear video summary with timestamps."
+          ? " Provide a comprehensive video summary with 5-7 detailed timestamps based on your knowledge about the video."
           : ""
       }`;
     }
@@ -238,8 +277,73 @@ Respond appropriately as Watchwing. ALWAYS use "screen" terminology when referri
       isCodingContext
         ? " Provide detailed, educational coding assistance."
         : isYouTubeContext
-        ? " Provide concise video summary with timestamps."
+        ? " Provide a comprehensive video summary with 5-7 detailed timestamps based on your knowledge about the video."
         : " Be brief and natural."
     }`;
+  }
+
+  // Specialized prompt for YouTube video summarization WITHOUT transcript
+  static buildYouTubeSummaryPromptFromURL(
+    videoId: string,
+    prompt: string = "",
+    videoTitle?: string,
+    channelName?: string,
+    duration?: string
+  ): string {
+    return `You are Watchwing - a specialized YouTube video summarizer with extensive knowledge about popular YouTube content.
+
+TASK: Provide a comprehensive summary of the YouTube video with detailed timestamps based on your knowledge.
+
+VIDEO INFORMATION:
+- Video ID: ${videoId}
+${videoTitle ? `- Title: "${videoTitle}"` : ""}
+${channelName ? `- Channel: ${channelName}` : ""}
+${duration ? `- Duration: ${duration}` : ""}
+
+USER REQUEST: ${prompt || "Please summarize this YouTube video with timestamps"}
+
+IMPORTANT INSTRUCTIONS:
+1. Use your extensive knowledge about YouTube videos to provide an accurate summary
+2. For popular videos (music videos, famous tutorials, trending content), you should know the content well
+3. Provide 5-7 key moments with approximate timestamps
+4. Include detailed descriptions of each key moment
+5. Be comprehensive but concise
+6. If you know the video structure (e.g., typical song structure for music videos), use that knowledge
+7. Provide timestamps even if approximate - they help users navigate the video
+
+SUMMARY GUIDELINES:
+1. **Start with a brief overview** of the video
+2. **List 5-7 key moments** with timestamps and descriptions
+3. **Include the main takeaway/message**
+4. **Mention the video type** (music video, tutorial, vlog, documentary, etc.)
+5. **Highlight key themes or topics** covered
+6. **Use bullet points** for readability
+7. **Be detailed and informative** - users rely on your knowledge
+
+RESPONSE FORMAT:
+**🎬 Summary of "${videoTitle || "YouTube Video"}"${
+      channelName ? ` from ${channelName}` : ""
+    }**
+
+**📝 Key Moments:**
+• [00:30] - [Detailed description of first key moment - what happens, important visuals, audio, etc.]
+• [01:15] - [Detailed description of second key moment]
+• [02:45] - [Detailed description of third key moment]
+• [04:20] - [Detailed description of fourth key moment]
+• [06:10] - [Detailed description of fifth key moment]
+
+**🎯 Main Takeaway:**
+[2-3 sentence summary of the video's core message, value, or purpose]
+
+**⏱️ Video Details:**
+- Channel: ${channelName || "Unknown"}
+- Type: [Music Video/Tutorial/Vlog/Documentary/Entertainment]
+- Key Themes: [Main themes or topics covered]
+${duration ? `- Duration: ${duration}` : ""}
+
+**💡 Additional Insights:**
+[Any additional interesting facts, context, or information about the video]
+
+Remember: You have knowledge about popular YouTube content. Provide the most accurate and helpful summary possible.`;
   }
 }

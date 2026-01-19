@@ -38,7 +38,7 @@ export class GeminiService {
       (match, lang, code) => {
         const language = lang || "text";
         return `\`\`\`${language}\n${code.trim()}\n\`\`\``;
-      }
+      },
     );
 
     // Clean up YouTube summary formatting
@@ -56,19 +56,19 @@ export class GeminiService {
     result = result.replace(/\*\*🎬 Summary of\*\*/g, "**🎬 Summary of**");
     result = result.replace(
       /\*\*📝 Key Moments:\*\*/g,
-      "\n**📝 Key Moments:**"
+      "\n**📝 Key Moments:**",
     );
     result = result.replace(
       /\*\*🎯 Main Takeaway:\*\*/g,
-      "\n**🎯 Main Takeaway:**"
+      "\n**🎯 Main Takeaway:**",
     );
     result = result.replace(
       /\*\*⏱️ Video Details:\*\*/g,
-      "\n**⏱️ Video Details:**"
+      "\n**⏱️ Video Details:**",
     );
     result = result.replace(
       /\*\*💡 Additional Insights:\*\*/g,
-      "\n**💡 Additional Insights:**"
+      "\n**💡 Additional Insights:**",
     );
 
     // Ensure bullet points are properly formatted
@@ -161,7 +161,7 @@ export class GeminiService {
   static async generateContent(
     contents: any,
     maxTokens: number,
-    maxRetries: number = KeyManager.getAvailableKeys().length * 2
+    maxRetries: number = KeyManager.getAvailableKeys().length * 2,
   ): Promise<GeminiResponse> {
     let lastError: Error | null = null;
     const attemptedKeys = new Set<string>();
@@ -192,7 +192,7 @@ export class GeminiService {
         console.log(
           `Attempt ${
             attempt + 1
-          }/${maxRetries} with key ${keyIndex}, max tokens: ${maxTokens}`
+          }/${maxRetries} with key ${keyIndex}, max tokens: ${maxTokens}`,
         );
 
         const genAI = this.createGeminiClient(currentKey);
@@ -228,7 +228,7 @@ export class GeminiService {
         const tokensUsed = Math.ceil(text.length / 4);
 
         console.log(
-          `Request completed in ${responseTime}ms, estimated tokens: ${tokensUsed}`
+          `Request completed in ${responseTime}ms, estimated tokens: ${tokensUsed}`,
         );
 
         return {
@@ -243,7 +243,7 @@ export class GeminiService {
 
         console.error(
           `Attempt ${attempt + 1} failed with key ${keyIndex} (${errorType}):`,
-          lastError.message
+          lastError.message,
         );
 
         // Record error for this key
@@ -289,7 +289,7 @@ export class GeminiService {
     prompt: string = "",
     videoTitle?: string,
     channelName?: string,
-    duration?: string
+    duration?: string,
   ): Promise<GeminiResponse> {
     try {
       console.log(`Generating YouTube summary from URL for video: ${videoId}`);
@@ -300,7 +300,7 @@ export class GeminiService {
         prompt,
         videoTitle,
         channelName,
-        duration
+        duration,
       );
 
       // Determine max tokens (INCREASED for better summaries)
@@ -309,7 +309,7 @@ export class GeminiService {
       console.log(
         `YouTube summary tokens allocated: ${maxTokens}`,
         videoTitle ? `Title: ${videoTitle}` : "",
-        channelName ? `Channel: ${channelName}` : ""
+        channelName ? `Channel: ${channelName}` : "",
       );
 
       // Prepare content for Gemini
@@ -325,7 +325,7 @@ export class GeminiService {
 
       if (result.success && result.text) {
         console.log(
-          "AI successfully generated YouTube summary with timestamps"
+          "AI successfully generated YouTube summary with timestamps",
         );
 
         // Check if summary has timestamps
@@ -361,7 +361,8 @@ export class GeminiService {
     videoTranscript?: string,
     videoTitle?: string,
     channelName?: string,
-    videoDuration?: string
+    videoDuration?: string,
+    isCodeOnlyRequest: boolean = false, // ADDED NEW PARAMETER
   ): Promise<GeminiResponse> {
     try {
       // Check if this is a YouTube summary request
@@ -381,17 +382,19 @@ export class GeminiService {
           prompt,
           videoTitle,
           channelName,
-          videoDuration
+          videoDuration,
         );
       }
 
-      // Regular request handling
-      const maxTokens = PromptBuilder.getMaxTokensForPrompt(
-        prompt,
-        hasImage,
-        youtubeVideoId,
-        isCodingPlatform
-      );
+      // Regular request handling - use max tokens for coding platforms
+      const maxTokens = isCodingPlatform
+        ? 4000
+        : PromptBuilder.getMaxTokensForPrompt(
+            prompt,
+            hasImage,
+            youtubeVideoId,
+            isCodingPlatform,
+          );
 
       console.log(`Generating response with ${maxTokens} tokens`);
 
@@ -402,7 +405,8 @@ export class GeminiService {
         hasImage,
         youtubeVideoId,
         isCodingPlatform,
-        videoTranscript
+        isCodeOnlyRequest,
+        videoTranscript,
       );
 
       const contents = [
@@ -426,7 +430,7 @@ export class GeminiService {
   // Direct method for summarizing YouTube video from URL
   static async summarizeYouTubeVideo(
     videoUrl: string,
-    customPrompt?: string
+    customPrompt?: string,
   ): Promise<GeminiResponse> {
     try {
       // Extract video ID from URL
@@ -456,7 +460,7 @@ export class GeminiService {
         prompt,
         videoTitle,
         "YouTube Channel", // Default channel name
-        undefined // duration
+        undefined, // duration
       );
     } catch (error) {
       console.error("Error summarizing YouTube video:", error);

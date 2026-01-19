@@ -29,7 +29,7 @@ export async function POST(req: NextRequest) {
     if (!prompt && !image) {
       return NextResponse.json(
         { error: "Either prompt or image is required" },
-        { status: 400, headers: corsHeaders }
+        { status: 400, headers: corsHeaders },
       );
     }
 
@@ -45,6 +45,13 @@ export async function POST(req: NextRequest) {
       ? CodingPlatformProcessor.isCodingPlatform(currentUrl)
       : false;
 
+    // Check if user is asking for code-only response
+    const isCodeOnlyRequest =
+      prompt.toLowerCase().includes("send the code") ||
+      prompt.toLowerCase().includes("code only") ||
+      prompt.toLowerCase().includes("just the code") ||
+      prompt.toLowerCase().includes("only code");
+
     // Build the intelligent prompt
     const finalPrompt = PromptBuilder.buildIntelligentPrompt(
       prompt,
@@ -52,11 +59,14 @@ export async function POST(req: NextRequest) {
       currentUrl,
       hasImage,
       youtubeVideoId,
-      isCodingPlatform
+      isCodingPlatform,
+      isCodeOnlyRequest,
     );
 
-    // Get appropriate max tokens
-    const maxTokens = PromptBuilder.getMaxTokensForPrompt(prompt, hasImage);
+    // Get appropriate max tokens - use max tokens for coding platforms
+    const maxTokens = isCodingPlatform
+      ? 4000
+      : PromptBuilder.getMaxTokensForPrompt(prompt, hasImage);
 
     // Prepare Gemini request contents
     let contents;
@@ -115,12 +125,12 @@ export async function POST(req: NextRequest) {
               ? "coding_screen_analysis"
               : "screen_analysis"
             : isCodingPlatform
-            ? "coding_assistant"
-            : "general_assistant",
+              ? "coding_assistant"
+              : "general_assistant",
           tokensUsed: maxTokens,
           isCodingContext: isCodingPlatform,
         },
-        { headers: corsHeaders }
+        { headers: corsHeaders },
       );
     } else {
       return NextResponse.json(
@@ -129,7 +139,7 @@ export async function POST(req: NextRequest) {
           success: false,
           technicalError: result.technicalError,
         },
-        { status: 500, headers: corsHeaders }
+        { status: 500, headers: corsHeaders },
       );
     }
   } catch (err: unknown) {
@@ -145,7 +155,7 @@ export async function POST(req: NextRequest) {
         success: false,
         debug: process.env.NODE_ENV === "development" ? message : undefined,
       },
-      { status: 500, headers: corsHeaders }
+      { status: 500, headers: corsHeaders },
     );
   }
 }

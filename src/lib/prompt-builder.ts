@@ -6,7 +6,7 @@ export class PromptBuilder {
     prompt: string = "",
     hasImage: boolean = false,
     youtubeVideoId?: string | null,
-    isCodingPlatform: boolean = false
+    isCodingPlatform: boolean = false,
   ): number {
     const simpleGreetings = ["hi", "hello", "hey", "hi!", "hello!", "hey!"];
     const shortQuestions = [
@@ -19,7 +19,7 @@ export class PromptBuilder {
     // Detect coding-related prompts or coding platforms
     const isCodingRelated = CodingPlatformProcessor.detectCodingContext(
       prompt,
-      hasImage
+      hasImage,
     );
 
     // Check for YouTube URLs or video summarization requests
@@ -43,7 +43,7 @@ export class PromptBuilder {
     // PRIORITY 2: Coding questions or screenshots - use maximum tokens
     if (isCodingRelated || isCodingPlatform) {
       console.log("Coding context detected - using 4000 tokens");
-      return 2000; // Maximum tokens for complex coding solutions
+      return 4000; // Maximum tokens for complex coding solutions
     }
 
     // Simple greetings and short questions
@@ -86,7 +86,8 @@ export class PromptBuilder {
     hasImage: boolean = false,
     youtubeVideoId?: string | null,
     isCodingPlatform: boolean = false,
-    videoTranscript?: string
+    isCodeOnlyRequest: boolean = false,
+    videoTranscript?: string,
   ): string {
     const isCodingContext =
       CodingPlatformProcessor.detectCodingContext(prompt, hasImage) ||
@@ -162,6 +163,22 @@ For coding problems, structure your response as:
 Remember: The goal is  just getting the answer right.`
       : "";
 
+    // Check if user is asking for code-only response
+    const codeOnlyGuidelines =
+      isCodingContext && isCodeOnlyRequest
+        ? `
+
+SPECIAL INSTRUCTION: USER IS ASKING FOR CODE-ONLY RESPONSE
+- The user has requested "send the code" or similar
+- Provide ONLY the code solution with no explanations
+- Use proper code block formatting with language specification
+- The response should be ONLY the code inside triple backticks
+- No additional text, explanations, or commentary
+- Example format: \`\`\`python\n[code here]\n\`\`\`
+- Do not include "here is the code" or any introductory text
+- The response should start with \`\`\`[language] and end with \`\`\``
+        : "";
+
     // Add YouTube-specific guidelines when context is detected
     const youtubeGuidelines = isYouTubeContext
       ? `
@@ -215,6 +232,7 @@ SCREEN ANALYSIS:
     let contextPrompt =
       basePersonality +
       codingGuidelines +
+      codeOnlyGuidelines +
       youtubeGuidelines +
       specialCapabilities;
 
@@ -228,6 +246,20 @@ SCREEN ANALYSIS:
 
       if (isCodingPlatform) {
         contextPrompt += `\n\nUser is on a coding practice platform. Provide thorough, educational coding assistance.`;
+
+        // Add platform-specific guidance
+        const platformName =
+          CodingPlatformProcessor.getPlatformName(currentUrl);
+        const platformGuidance =
+          CodingPlatformProcessor.getPlatformGuidance(currentUrl);
+        const defaultLanguage =
+          CodingPlatformProcessor.getPlatformDefaultLanguage(currentUrl);
+
+        if (platformName) {
+          contextPrompt += `\n\nPlatform: ${platformName}`;
+          contextPrompt += `\n\nPlatform Guidance: ${platformGuidance}`;
+          contextPrompt += `\n\nDefault Language: ${defaultLanguage}`;
+        }
       }
     }
 
@@ -244,7 +276,7 @@ SCREEN ANALYSIS:
     // Handle simple prompts
     const simplePrompts = ["hi", "hello", "hey", "how are you", "what's up"];
     const isSimplePrompt = simplePrompts.some((simple) =>
-      prompt.toLowerCase().trim().includes(simple)
+      prompt.toLowerCase().trim().includes(simple),
     );
 
     if (isSimplePrompt && !isCodingContext && !isYouTubeContext) {
@@ -261,11 +293,13 @@ ${conversationHistory}
 Current question: ${prompt}
 
 Respond naturally and appropriately as Watchwing. ALWAYS use "screen" terminology when referring to visual content.${
-        isCodingContext
-          ? " Focus on educational value and thorough explanations."
-          : isYouTubeContext
-          ? " Provide a comprehensive video summary with 5-7 detailed timestamps based on your knowledge about the video."
-          : ""
+        isCodingContext && isCodeOnlyRequest
+          ? " Provide ONLY the code solution with no explanations, starting and ending with code blocks."
+          : isCodingContext
+            ? " Focus on educational value and thorough explanations."
+            : isYouTubeContext
+              ? " Provide a comprehensive video summary with 5-7 detailed timestamps based on your knowledge about the video."
+              : ""
       }`;
     }
 
@@ -274,11 +308,13 @@ Respond naturally and appropriately as Watchwing. ALWAYS use "screen" terminolog
 User: ${prompt || "Hello"}
 
 Respond appropriately as Watchwing. ALWAYS use "screen" terminology when referring to visual content.${
-      isCodingContext
-        ? " Provide detailed, educational coding assistance."
-        : isYouTubeContext
-        ? " Provide a comprehensive video summary with 5-7 detailed timestamps based on your knowledge about the video."
-        : " Be brief and natural."
+      isCodingContext && isCodeOnlyRequest
+        ? " Provide ONLY the code solution with no explanations, starting and ending with code blocks."
+        : isCodingContext
+          ? " Provide detailed, educational coding assistance."
+          : isYouTubeContext
+            ? " Provide a comprehensive video summary with 5-7 detailed timestamps based on your knowledge about the video."
+            : " Be brief and natural."
     }`;
   }
 
@@ -288,7 +324,7 @@ Respond appropriately as Watchwing. ALWAYS use "screen" terminology when referri
     prompt: string = "",
     videoTitle?: string,
     channelName?: string,
-    duration?: string
+    duration?: string,
   ): string {
     return `You are Watchwing - a specialized YouTube video summarizer with extensive knowledge about popular YouTube content.
 

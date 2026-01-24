@@ -4,6 +4,7 @@ import Laptop from "@/components/Laptop";
 import { PowerUsage } from "@/components/PowerUsage";
 import { RetroGridBackground } from "@/components/RetroGridBackground";
 import Showreel from "@/components/ShowReel";
+import ScrollFAQAccordion from "@/components/ui/Scrollfaq";
 import UserCount from "@/components/UsersCount";
 import React from "react";
 
@@ -20,6 +21,7 @@ const page = () => {
         <PowerUsage />
       </div>
       <UserCount />
+      <ScrollFAQAccordion />
       <RetroGridBackground />
     </div>
   );

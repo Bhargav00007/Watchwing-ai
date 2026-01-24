@@ -42,7 +42,7 @@ export default function Showreel() {
              xl:max-w-[900px]"
           controls
           controlsList="nodownload"
-          src={"/showreel0.mp4"}
+          src={"/showreel.mp4"}
           onLoadedData={handleLoadedData}
         />
       )}

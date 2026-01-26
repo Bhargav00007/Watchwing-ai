@@ -1,4 +1,5 @@
 import { BentoGrid } from "@/components/BentoGrid";
+import Footer from "@/components/Footer";
 import Hero from "@/components/Hero";
 import Laptop from "@/components/Laptop";
 import { PowerUsage } from "@/components/PowerUsage";
@@ -23,6 +24,7 @@ const page = () => {
       <UserCount />
       <ScrollFAQAccordion />
       <RetroGridBackground />
+      <Footer />
     </div>
   );
 };

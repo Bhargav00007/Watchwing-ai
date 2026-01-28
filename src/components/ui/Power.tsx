@@ -33,9 +33,9 @@ const CpuArchitecture = ({
     >
       {/* Paths */}
       <g
-        stroke="currentColor"
+        stroke="#424242"
         fill="none"
-        strokeWidth="0.04"
+        strokeWidth="0.2"
         strokeDasharray="100 100"
         pathLength="100"
         markerStart="url(#cpu-circle-marker)"

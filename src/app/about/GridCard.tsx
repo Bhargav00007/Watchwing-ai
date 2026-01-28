@@ -19,9 +19,9 @@ export function GridPatternCard({
     <motion.div
       className={cn(
         "border w-full rounded-md overflow-hidden",
-        "bg-white dark:bg-zinc-950",
-        "border-zinc-200 dark:border-zinc-900",
-        className
+        " bg-zinc-950",
+        " border-zinc-900",
+        className,
       )}
       initial={{ opacity: 0, y: -20 }}
       animate={{ opacity: 1, y: 0 }}
@@ -30,16 +30,15 @@ export function GridPatternCard({
       <div
         className={cn(
           "size-full bg-repeat bg-[length:50px_50px]",
-          "bg-square-pattern-light dark:bg-square-pattern",
-          patternClassName
+          " bg-square-pattern",
+          patternClassName,
         )}
       >
         <div
           className={cn(
             "size-full bg-gradient-to-tr",
-            "from-white via-white/[0.85] to-white",
-            "dark:from-zinc-950 dark:via-zinc-950/[.85] dark:to-zinc-950",
-            gradientClassName
+            "from-zinc-950 via-zinc-950/[.85] to-zinc-950",
+            gradientClassName,
           )}
         >
           {children}

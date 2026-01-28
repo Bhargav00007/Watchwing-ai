@@ -79,11 +79,11 @@ export default function ScrollFAQAccordion({
     >
       {/* CENTERED CONTENT */}
       <div className="w-full max-w-3xl text-center">
-        <h2 className="text-3xl sm:text-4xl font-bold mb-3 lg:mt-15 mt-20">
+        <h2 className="text-3xl sm:text-4xl text-white font-bold mb-3 lg:mt-15 mt-20">
           Frequently Asked Questions
         </h2>
 
-        <p className="text-muted-foreground mb-10 text-sm sm:text-base">
+        <p className="text-white mb-10 text-sm sm:text-base">
           Find answers to common questions about watchwing ai.
         </p>
 
@@ -99,7 +99,7 @@ export default function ScrollFAQAccordion({
               <Accordion.Item value={item.id.toString()}>
                 <Accordion.Header>
                   <Accordion.Trigger
-                    className="flex w-full items-center justify-between gap-4 cursor-pointer"
+                    className="flex w-full items-center justify-between gap-4 cursor-pointer text-white"
                     onClick={() => handleItemClick(item.id.toString())}
                   >
                     <div
@@ -113,7 +113,7 @@ export default function ScrollFAQAccordion({
                       {item.question}
                     </div>
 
-                    <div className="flex-shrink-0">
+                    <div className="flex-shrink-0 text-white">
                       {openItem === item.id.toString() ? (
                         <Minus className="h-5 w-5" />
                       ) : (

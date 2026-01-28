@@ -10,13 +10,13 @@ const page = () => {
       <div className="my-5">
         <GridPatternCard>
           <GridPatternCardBody>
-            <h3 className="text-lg font-bold mb-1 text-foreground">
+            <h3 className="text-lg font-bold mb-1 text-white">
               WatchWing AI – Smarter Tokens & Precision Update
             </h3>
             <p className="text-sm text-gray-400 mb-1">Version 1.3.1</p>
             <p className="text-xs text-gray-500 mb-3">10 November 2025</p>
 
-            <div className="text-wrap text-sm text-foreground/60 space-y-3">
+            <div className="text-wrap text-sm text-white/60 space-y-3">
               <p>
                 WatchWing AI becomes even more efficient with adaptive token
                 usage, advanced YouTube summarization, and smarter coding
@@ -24,9 +24,7 @@ const page = () => {
               </p>
 
               <div className="space-y-2">
-                <h4 className="font-semibold text-foreground">
-                  What&apos;s New:
-                </h4>
+                <h4 className="font-semibold text-white">What&apos;s New:</h4>
                 <ul className="space-y-1 ml-4">
                   <li>
                     • <strong>Adaptive Token System</strong> – AI now uses only
@@ -55,22 +53,20 @@ const page = () => {
       <div className="my-5">
         <GridPatternCard>
           <GridPatternCardBody>
-            <h3 className="text-lg font-bold mb-1 text-foreground">
+            <h3 className="text-lg font-bold mb-1 text-white">
               WatchWing AI – Voice & Customization Update
             </h3>
             <p className="text-sm text-gray-400 mb-1">Version 1.3.0</p>
             <p className="text-xs text-gray-500 mb-3">18 October 2025</p>
 
-            <div className="text-wrap text-sm text-foreground/60 space-y-3">
+            <div className="text-wrap text-sm text-white/60 space-y-3">
               <p>
                 WatchWing AI gets even smarter with voice interactions,
                 customizable interface, and enhanced conversation features.
               </p>
 
               <div className="space-y-2">
-                <h4 className="font-semibold text-foreground">
-                  What&apos;s New:
-                </h4>
+                <h4 className="font-semibold text-white">What&apos;s New:</h4>
                 <ul className="space-y-1 ml-4">
                   <li>
                     • <strong>Voice Conversations</strong> - Speak your
@@ -92,9 +88,7 @@ const page = () => {
               </div>
 
               <div className="space-y-2">
-                <h4 className="font-semibold text-foreground">
-                  Enhanced Features:
-                </h4>
+                <h4 className="font-semibold text-white">Enhanced Features:</h4>
                 <ul className="space-y-1 ml-4">
                   <li>
                     • <strong>Natural Voice Selection</strong> - Automatically
@@ -121,22 +115,20 @@ const page = () => {
       <div className="my-5">
         <GridPatternCard>
           <GridPatternCardBody>
-            <h3 className="text-lg font-bold mb-1 text-foreground">
+            <h3 className="text-lg font-bold mb-1 text-white">
               WatchWing AI – Natural Conversations Evolved
             </h3>
             <p className="text-sm text-gray-400 mb-1">Version 1.2.0</p>
             <p className="text-xs text-gray-500 mb-3">1 October 2025</p>
 
-            <div className="text-wrap text-sm text-foreground/60 space-y-3">
+            <div className="text-wrap text-sm text-white/60 space-y-3">
               <p>
                 This update makes chatting with WatchWing AI feel more natural
                 and convenient than ever before.
               </p>
 
               <div className="space-y-2">
-                <h4 className="font-semibold text-foreground">
-                  What&apos;s New:
-                </h4>
+                <h4 className="font-semibold text-white">What&apos;s New:</h4>
                 <ul className="space-y-1 ml-4">
                   <li>
                     • <strong>Natural Talking</strong> - AI now responds like a
@@ -167,13 +159,13 @@ const page = () => {
       <div className="my-5">
         <GridPatternCard>
           <GridPatternCardBody>
-            <h3 className="text-lg font-bold mb-1 text-foreground">
+            <h3 className="text-lg font-bold mb-1 text-white">
               WatchWing AI – Step to Future (Conversation Flow Update)
             </h3>
             <p className="text-sm text-gray-400 mb-1">Version 1.1.0</p>
             <p className="text-xs text-gray-500 mb-3">28 September 2025</p>
 
-            <div className="text-wrap text-sm text-foreground/60 space-y-3">
+            <div className="text-wrap text-sm text-white/60 space-y-3">
               <p>
                 The Conversation Flow Update transforms WatchWing AI from a
                 simple screen analyzer to an intelligent conversational
@@ -182,9 +174,7 @@ const page = () => {
               </p>
 
               <div className="space-y-2">
-                <h4 className="font-semibold text-foreground">
-                  Key Improvements:
-                </h4>
+                <h4 className="font-semibold text-white">Key Improvements:</h4>
                 <ul className="space-y-1 ml-4">
                   <li>
                     • <strong>Conversation Memory</strong> - AI now remembers
@@ -222,13 +212,13 @@ const page = () => {
       </div>
       <GridPatternCard>
         <GridPatternCardBody>
-          <h3 className="text-lg font-bold mb-1 text-foreground">
+          <h3 className="text-lg font-bold mb-1 text-white">
             WatchWing AI – The First Step
           </h3>
           <p className="text-sm text-gray-400 mb-1">Version 1.0.0</p>
           <p className="text-xs text-gray-500 mb-3">23 September 2025</p>
 
-          <p className="text-wrap text-sm text-foreground/60">
+          <p className="text-wrap text-sm text-white/60">
             The very first release of WatchWing AI introduced core vision:
             bringing the power of AI directly into your browser. Version 1.0.0
             allowed users to capture their on-screen context and get instant

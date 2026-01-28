@@ -67,7 +67,7 @@ const Contact = () => {
         <GridPatternCardBody>
           {!submitted ? (
             <>
-              <h3 className="text-lg font-bold mb-4 text-foreground">
+              <h3 className="text-lg font-bold mb-4 text-white">
                 Send us a Message
               </h3>
 
@@ -183,7 +183,7 @@ const Contact = () => {
                   ></path>
                 </svg>
               </div>
-              <h3 className="text-xl font-semibold text-foreground mb-2">
+              <h3 className="text-xl font-semibold text-white mb-2">
                 Thank you for contacting us!
               </h3>
               <p className="text-gray-400">We&apos;ll be in touch soon.</p>

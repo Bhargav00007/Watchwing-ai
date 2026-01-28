@@ -52,7 +52,7 @@ export function MinimalFooter() {
   ];
   return (
     <footer className="relative">
-      <div className="bg-[radial-gradient(35%_80%_at_30%_0%,--theme(--color-foreground/.1),transparent)] mx-auto max-w-5xl md:border-x border-[#111111]">
+      <div className="bg-[radial-gradient(35%_80%_at_30%_0%,--theme(--color-white/.1),transparent)] mx-auto max-w-5xl md:border-x border-[#111111]">
         {/* Top border line */}
         <div className="bg-[#111111] absolute inset-x-0 h-px w-full" />
 

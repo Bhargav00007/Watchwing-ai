@@ -48,18 +48,18 @@ const NavBar = () => {
       textColor: "#fff",
       links: [
         {
-          label: "Email",
-          href: "mailto:info@example.com",
-          ariaLabel: "Email us",
+          label: "Contact",
+          href: "/contact",
+          ariaLabel: "Contact us",
         },
         {
-          label: "Twitter",
-          href: "https://twitter.com/example",
-          ariaLabel: "Twitter",
+          label: "Github",
+          href: "https://github.com/Bhargav00007",
+          ariaLabel: "Github",
         },
         {
           label: "LinkedIn",
-          href: "https://linkedin.com/company/example",
+          href: "https://www.linkedin.com/in/bhrgv07/",
           ariaLabel: "LinkedIn",
         },
       ],

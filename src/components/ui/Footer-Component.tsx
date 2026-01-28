@@ -18,13 +18,14 @@ export function MinimalFooter() {
       href: "/about",
     },
     {
+      title: "Contact Us",
+      href: "/contact",
+    },
+    {
       title: "Documentation",
       href: "/about/documentation",
     },
-    {
-      title: "Release Notes",
-      href: "/about/releasenotes",
-    },
+
     {
       title: "Privacy Policy",
       href: "#",
@@ -38,15 +39,15 @@ export function MinimalFooter() {
   const socialLinks = [
     {
       icon: <GithubIcon className="size-4" />,
-      link: "#",
+      link: "https://github.com/Bhargav00007",
     },
     {
       icon: <InstagramIcon className="size-4" />,
-      link: "#",
+      link: "https://www.instagram.com/_bhrgv._/",
     },
     {
       icon: <LinkedinIcon className="size-4" />,
-      link: "#",
+      link: "https://www.linkedin.com/in/bhrgv07/",
     },
   ];
   return (

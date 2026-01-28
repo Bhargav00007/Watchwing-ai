@@ -28,11 +28,11 @@ export function MinimalFooter() {
 
     {
       title: "Privacy Policy",
-      href: "#",
+      href: "/privacy-policy",
     },
     {
       title: "Terms of Service",
-      href: "#",
+      href: "/terms-of-service",
     },
   ];
 

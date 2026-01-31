@@ -11,6 +11,14 @@ const GEMINI_KEYS = [
   process.env.GEMINI_API_KEY_9,
   process.env.GEMINI_API_KEY_10,
   process.env.GEMINI_API_KEY_11,
+  process.env.GEMINI_API_KEY_12,
+  process.env.GEMINI_API_KEY_13,
+  process.env.GEMINI_API_KEY_14,
+  process.env.GEMINI_API_KEY_15,
+  process.env.GEMINI_API_KEY_16,
+  process.env.GEMINI_API_KEY_17,
+  process.env.GEMINI_API_KEY_18,
+  process.env.GEMINI_API_KEY_19,
 ].filter(Boolean);
 
 const MODEL = process.env.GEMINI_MODEL || "gemini-2.5-flash";
@@ -100,7 +108,7 @@ export class KeyManager {
 
     const keyIndex = GEMINI_KEYS.indexOf(selectedKey!);
     console.log(
-      `Selected random API key index: ${keyIndex} (${availableKeys.length} available)`
+      `Selected random API key index: ${keyIndex} (${availableKeys.length} available)`,
     );
 
     return selectedKey!;
@@ -109,7 +117,7 @@ export class KeyManager {
   // Record error for a key
   static recordKeyError(
     key: string,
-    errorType: "quota" | "rate_limit" | "service" | "other"
+    errorType: "quota" | "rate_limit" | "service" | "other",
   ) {
     const status = this.keyStatusMap.get(key);
     if (!status) return;
@@ -125,11 +133,11 @@ export class KeyManager {
     if (status.consecutiveErrors >= this.MAX_CONSECUTIVE_ERRORS) {
       status.isBlacklisted = true;
       console.warn(
-        `API key ${keyIndex} blacklisted after ${status.consecutiveErrors} consecutive errors (Type: ${errorType})`
+        `API key ${keyIndex} blacklisted after ${status.consecutiveErrors} consecutive errors (Type: ${errorType})`,
       );
     } else {
       console.log(
-        `Error recorded for key ${keyIndex}: ${status.errorCount} total, ${status.consecutiveErrors} consecutive (Type: ${errorType})`
+        `Error recorded for key ${keyIndex}: ${status.errorCount} total, ${status.consecutiveErrors} consecutive (Type: ${errorType})`,
       );
     }
   }
@@ -146,7 +154,7 @@ export class KeyManager {
 
   // Classify error type
   static classifyError(
-    error: Error
+    error: Error,
   ): "quota" | "rate_limit" | "service" | "other" {
     const errorMessage = error.message.toLowerCase();
 

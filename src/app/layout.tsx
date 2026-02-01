@@ -17,6 +17,9 @@ export const metadata: Metadata = {
   title: "WatchWing AI",
   description:
     "Turn your screen into an intelligent assistant that answers questions in real time.",
+  verification: {
+    google: "t2Gr3Xh7GY1NTbUqJwz7Tiz2StaTvOUbIX4O9Vv35BE",
+  },
 };
 
 export default function RootLayout({

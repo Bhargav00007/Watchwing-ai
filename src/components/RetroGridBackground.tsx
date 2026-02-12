@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { RetroGrid } from "../components/ui/RetroGrid";
 import { FaChrome, FaEdge } from "react-icons/fa";
 import { SiBrave } from "react-icons/si";
@@ -27,7 +28,9 @@ export function RetroGridBackground() {
       {/* Add to Chrome Button */}
       <button className="flex items-center gap-2 bg-white text-gray-800 px-5 py-2 rounded-md shadow-md hover:shadow-lg transition">
         <FaChrome className="text-xl " />
-        Add to Chrome
+        <Link href="https://chromewebstore.google.com/detail/watchwing-ai-assistant/aapkiocjlimojamodnjledmnpbbbajbh?utm_source=item-share-cb">
+          Add to Chrome
+        </Link>
       </button>
 
       {/* Retro Grid */}

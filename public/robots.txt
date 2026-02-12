@@ -1,0 +1,13 @@
+User-agent: *
+Allow: /
+
+
+Sitemap: https://watchwing.vercel.app/sitemap.xml
+
+
+Crawl-delay: 5
+
+
+# Disallow: /api/*
+
+Host: https://watchwing.vercel.app

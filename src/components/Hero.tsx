@@ -41,7 +41,7 @@ const Hero = () => {
         <div className="flex flex-col sm:flex-row gap-4 pointer-events-auto">
           <Link href="/download">
             <button className="px-12 py-3 rounded-full cursor-pointer bg-[#1a013a] text-white font-semibold hover:bg-[#2b0257] transition">
-              Download
+              Add to Chrome
             </button>
           </Link>
           <Link href="/about">

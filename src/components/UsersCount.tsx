@@ -53,7 +53,7 @@ const UserCount = () => {
             <h2 className="text-3xl sm:text-4xl md:text-5xl mb-1 font-bold text-gray-300">
               <CountUp
                 from={0}
-                to={users}
+                to={9}
                 separator=","
                 direction="up"
                 duration={2}

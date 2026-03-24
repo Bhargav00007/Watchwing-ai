@@ -29,6 +29,7 @@ const GEMINI_KEYS = [
   process.env.GEMINI_API_KEY_27,
   process.env.GEMINI_API_KEY_28,
   process.env.GEMINI_API_KEY_29,
+  process.env.GEMINI_API_KEY_30,
 ].filter(Boolean);
 
 const MODEL = process.env.GEMINI_MODEL || "gemini-2.5-flash";
